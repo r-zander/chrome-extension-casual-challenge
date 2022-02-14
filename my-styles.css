@@ -1,0 +1,25 @@
+.deck-list-section-entries .card-legality {
+    border-top: none;
+    padding: 0;
+    margin-left: 5px;
+}
+
+.deck-list-section-entries .card-legality > dd {
+    padding: 0 6px;
+    width: auto;
+    line-height: 20px;
+
+    max-width: 42px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-legality > dd.extended {
+    background-color: #EFC20E;
+}
+
+/* Reduce price width a bit - in casual prices should be pretty low anyways */
+.deck-list-entry-axial-data {
+    min-width: 2.75em !important;
+}
