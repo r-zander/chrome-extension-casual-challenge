@@ -1,13 +1,13 @@
-// setTimeout(
-//     () => {
-//         alert("Hi :)");
-//     },
-//     1000
-// )
 const STORAGE_KEY_ENABLED_DECKS = 'enabledDecks';
+const STORAGE_KEY_CARD_CACHE = 'cardCache';
+// 7 days aka 1 week (mostly)
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
+// const CACHE_DURATION = 10 * 1000;
 
-let disabledButton;
-let enabledButton;
+let loadingIndicator,
+    disabledButton,
+    enabledButton;
+let deckWasChecked = false;
 
 function getDeckId() {
     let pathElements = location.pathname.split('/');
@@ -36,6 +36,9 @@ async function isCasualChallengeDeck() {
     let deckTitle = document.querySelector('.deck-details-title').innerText;
     if (deckTitle.match(/Casual.{0,3}Challenge/i) !== null) {
         console.log('isCasualChallengeDeck', 'Deck Title matches');
+        // Synchronously store that this deck should have its deck check enabled
+        // to prevent unexpected behavior when the deck name changes
+        await storeDeckCheckFlag(true);
         return true;
     }
 
@@ -49,13 +52,15 @@ async function init() {
     sidebarTemplate.innerHTML = `
     <div class="sidebar-toolbox casual-challenge">
          <h2 class="sidebar-header">Casual Challenge</h2>
-<!--        TODO show loading button before toggleCheck is called  -->
-         <button class="casual-challenge-checks-disabled button-n tiny">Enable checks</button>
+         <div class="casual-challenge-checks-loading button-n tiny"><div class="dot-flashing"></div></div>
+         <button class="casual-challenge-checks-disabled button-n tiny hidden">Enable checks</button>
          <button class="casual-challenge-checks-enabled button-n primary tiny hidden">Disable checks</button>
     </div>`;
 
+    // By template already `displayLoading`
     document.querySelector('.sidebar-prices').after(sidebarTemplate.content);
 
+    loadingIndicator = document.querySelector('.casual-challenge-checks-loading');
     disabledButton = document.querySelector('.casual-challenge-checks-disabled');
     enabledButton = document.querySelector('.casual-challenge-checks-enabled');
 
@@ -63,28 +68,36 @@ async function init() {
         enableChecks();
     });
     enabledButton.addEventListener('click', () => {
-        // TODO actually manage disable
-        chrome.storage.sync.remove(STORAGE_KEY_ENABLED_DECKS);
-        location.reload();
-        // toggleCheck(false);
+        disableChecks();
     });
 
     if (document.querySelectorAll('.deck-list').length === 0) {
-        toggleCheck(false);
+        // Not displayed as deck list --> no deck check
+        displayDisabled();
         return;
     }
 
     if (!await isCasualChallengeDeck()) {
-        toggleCheck(false);
+        displayDisabled();
         return;
     }
 
     // Deck title contains 'Casual Challenge' so we can start.
-    checkDeck();
+    await checkDeck();
 }
 
 function checkDeck() {
-    toggleCheck(true);
+    document.querySelector('.deck').classList.add('casual-challenge-deck');
+
+    if (deckWasChecked) {
+        // Just show our elements
+        document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
+            element.classList.remove('hidden');
+        });
+
+        displayEnabled();
+        return Promise.resolve();
+    }
 
     const loadingTemplate = document.createElement('template');
     loadingTemplate.innerHTML = '<dl class="card-legality"><dd class="loading"><div class="dot-flashing"></div></dd></dl>';
@@ -101,39 +114,40 @@ function checkDeck() {
 
     let cardsToLoad = {};
 
-    chrome.runtime.sendMessage({action: 'get/banlist'}, function (banlist) {
-        console.log('Received Casual Challenge ban list: ', banlist);
-
-        document.querySelectorAll('.deck-list-entry').forEach((deckListEntry) => {
-            let cardName = deckListEntry.querySelector('.deck-list-entry-name').innerText.trim();
-            if (banlist.bans.hasOwnProperty(cardName)) {
-                deckListEntry.append(bannedTemplate.content.cloneNode(true));
-            } else if (banlist.extended.hasOwnProperty(cardName)) {
-                deckListEntry.append(extendedTemplate.content.cloneNode(true));
-            } else {
-                // We need some more infos about the card, so lets queue it for loading
-                deckListEntry.append(loadingTemplate.content.cloneNode(true));
-                cardsToLoad[deckListEntry.dataset.cardId] = deckListEntry;
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({action: 'get/banlist'}, (banlist) => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+                return;
             }
-        });
 
-        let cardIdsToLoad = Object.keys(cardsToLoad);
-        if (cardIdsToLoad.length > 0) {
-            cardIdsToLoad = cardIdsToLoad.map(cardId => {
-                return {id: cardId};
+            resolve(banlist);
+        });
+    })
+        .then((banlist) => {
+            console.log('Received Casual Challenge ban list: ', banlist);
+
+            document.querySelectorAll('.deck-list-entry').forEach((deckListEntry) => {
+                let cardName = deckListEntry.querySelector('.deck-list-entry-name').innerText.trim();
+                if (banlist.bans.hasOwnProperty(cardName)) {
+                    deckListEntry.append(bannedTemplate.content.cloneNode(true));
+                } else if (banlist.extended.hasOwnProperty(cardName)) {
+                    deckListEntry.append(extendedTemplate.content.cloneNode(true));
+                } else {
+                    // We need some more infos about the card, so lets queue it for loading
+                    deckListEntry.append(loadingTemplate.content.cloneNode(true));
+                    cardsToLoad[deckListEntry.dataset.cardId] = deckListEntry;
+                }
             });
-            // Load card data
-            // TODO support more than 75 cards by paging?
-            fetch('https://api.scryfall.com/cards/collection',
-                {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body:
-                        '{"identifiers": ' + JSON.stringify(cardIdsToLoad.slice(0, 75)) + ' }'
-                })
-                .then(response => response.json())
-                .then(collection => {
-                    collection.data.forEach(cardObject => {
+
+            let cardIdsToLoad = Object.keys(cardsToLoad);
+            if (cardIdsToLoad.length === 0) {
+                return Promise.resolve();
+            }
+
+            return loadCardsThroughCache(cardIdsToLoad)
+                .then(loadedCards => {
+                    loadedCards.forEach(cardObject => {
                         const cardId = cardObject.id;
                         const deckListEntry = cardsToLoad[cardId];
                         deckListEntry.querySelector('.card-legality').remove();
@@ -144,36 +158,134 @@ function checkDeck() {
                             deckListEntry.append(notLegalTemplate.content.cloneNode(true));
                         }
                     });
-                    // TODO handle not found
                 });
-        }
-    });
+        })
+        .then(() => {
+            displayEnabled();
+            deckWasChecked = true;
+        });
 }
 
-function toggleCheck(isEnabled) {
-    console.log('isEnabled', isEnabled);
-    if (isEnabled) {
-        disabledButton.classList.add('hidden');
-        enabledButton.classList.remove('hidden');
-    } else {
-        disabledButton.classList.remove('hidden');
-        enabledButton.classList.add('hidden');
-    }
+function loadCardsThroughCache(cardIdsToLoad) {
+    const loadedCards = [];
+    const remainingIds = [];
+    let cardCache;
+
+    return chrome.storage.local
+        .get(STORAGE_KEY_CARD_CACHE)
+        .then(cardCacheFromStorage => {
+            let now = Date.now();
+
+            if (!cardCacheFromStorage.hasOwnProperty(STORAGE_KEY_CARD_CACHE)) {
+                // AddAll cardIdsToLoad to remainingIds
+                Array.prototype.push.apply(remainingIds, cardIdsToLoad);
+                // Create new cache object
+                cardCache = {};
+            } else {
+                cardCache = cardCacheFromStorage[STORAGE_KEY_CARD_CACHE];
+
+
+                // Each card id either ends up either in the loadedCards (because
+                // it was found fresh in cache.
+                // Or in the remainingIds to be loaded in the next step.
+                cardIdsToLoad.forEach(cardId => {
+                    if (!cardCache.hasOwnProperty(cardId)) {
+                        // Not found in cache --> load
+                        remainingIds.push(cardId);
+                        return;
+                    }
+
+                    let cardObject = cardCache[cardId];
+                    console.log('Found card ' + cardId + '. CachedAt = ', cardObject.cachedAt);
+                    if ((now - cardObject.cachedAt) < CACHE_DURATION) {
+                        loadedCards.push(cardObject);
+                    } else {
+                        // Stale entry --> remove & reload
+                        console.log('Data was stale.');
+                        delete cardCache[cardId];
+                        remainingIds.push(cardId);
+                    }
+                });
+
+                console.log('About to load ' + remainingIds.length + ' cards via API', remainingIds);
+                if (remainingIds.length === 0) {
+                    return Promise.resolve(loadedCards);
+                }
+            }
+
+            const identifiersToLoad = remainingIds.map(cardId => {
+                return {id: cardId};
+            });
+
+            return fetch('https://api.scryfall.com/cards/collection',
+                         {
+                             method: 'POST',
+                             headers: {'Content-Type': 'application/json'},
+                             // TODO support more than 75 cards by paging?
+                             body: '{"identifiers": ' + JSON.stringify(identifiersToLoad.slice(0, 75)) + ' }',
+                         },
+            )
+                .then(response => response.json())
+                // TODO handle not found
+                .then(collection => collection.data)
+                .then(fromApi => {
+                    console.log('Loaded ' + fromApi.length + ' cards via API', fromApi);
+                    fromApi.forEach(cardObject => {
+                        cardObject.cachedAt = now;
+                        cardCache[cardObject.id] = cardObject;
+                    });
+
+                    return loadedCards.concat(fromApi);
+                });
+        })
+        .then(loadedCards => {
+            console.log('Store cache', cardCache);
+            // Store modified cache object
+            return chrome.storage.local.set({[STORAGE_KEY_CARD_CACHE]: cardCache})
+                // Pass loadedCards outside
+                .then(() => loadedCards);
+        });
 }
 
-function enableChecks() {
-    // TODO manage re-enable (was disabled --> enabled --> disabled --> enabled again)
-    chrome.storage.sync.get(STORAGE_KEY_ENABLED_DECKS)
+function displayLoading() {
+    console.log('isEnabled', 'loading');
+    loadingIndicator.classList.remove('hidden');
+    disabledButton.classList.add('hidden');
+    enabledButton.classList.add('hidden');
+}
+
+function displayEnabled() {
+    console.log('isEnabled', true);
+    loadingIndicator.classList.add('hidden');
+    disabledButton.classList.add('hidden');
+    enabledButton.classList.remove('hidden');
+}
+
+function displayDisabled() {
+    console.log('isEnabled', false);
+    loadingIndicator.classList.add('hidden');
+    disabledButton.classList.remove('hidden');
+    enabledButton.classList.add('hidden');
+}
+
+function storeDeckCheckFlag(isEnabled) {
+    return chrome.storage.sync
+        .get(STORAGE_KEY_ENABLED_DECKS)
         .then(enabledDecks => {
             if (enabledDecks.hasOwnProperty(STORAGE_KEY_ENABLED_DECKS)) {
                 enabledDecks = enabledDecks[STORAGE_KEY_ENABLED_DECKS];
             }
-            enabledDecks[getDeckId()] = true;
+            enabledDecks[getDeckId()] = isEnabled;
 
             return chrome.storage.sync.set(
-                {[STORAGE_KEY_ENABLED_DECKS]: enabledDecks}
+                {[STORAGE_KEY_ENABLED_DECKS]: enabledDecks},
             );
-        })
+        });
+}
+
+function enableChecks() {
+    displayLoading();
+    storeDeckCheckFlag(true)
         .then(() => {
             if (document.querySelectorAll('.deck-list').length === 0 || // In list mode?
                 document.getElementById('with').value !== 'eur') { // showing euros?
@@ -183,8 +295,24 @@ function enableChecks() {
                 queryParameters.set('with', 'eur');
                 location.search = queryParameters.toString();
             } else {
-                checkDeck();
+                return checkDeck();
             }
+        });
+}
+
+function disableChecks() {
+    displayLoading();
+    storeDeckCheckFlag(false)
+        .then(() => {
+            if (deckWasChecked) {
+                // Hide everything we added
+                document.querySelector('.deck').classList.remove('casual-challenge-deck');
+                document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
+                    element.classList.add('hidden');
+                });
+            }
+
+            displayDisabled();
         });
 }
 

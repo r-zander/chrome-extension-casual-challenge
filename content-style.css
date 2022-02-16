@@ -37,7 +37,7 @@
 }
 
 /* Reduce price width a bit - in casual prices should be pretty low anyways */
-.deck-list-entry-axial-data {
+.casual-challenge-deck .deck-list-entry-axial-data {
     min-width: 2.75em !important;
 }
 
