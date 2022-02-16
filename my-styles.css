@@ -1,3 +1,19 @@
+.sidebar-toolbox.casual-challenge {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #E0DEE3;
+    margin-top: -6px;
+    margin-bottom: 6px;
+}
+
+.casual-challenge > .sidebar-header {
+    margin-top: 0;
+    color: inherit;
+}
+
+.casual-challenge > .button-n {
+    margin: 0 !important;
+}
+
 .deck-list-section-entries .card-legality {
     border-top: none;
     padding: 0;
@@ -6,9 +22,10 @@
 
 .deck-list-section-entries .card-legality > dd {
     padding: 0 6px;
-    width: auto;
     line-height: 20px;
+    height: 20px;
 
+    min-width: 42px;
     max-width: 42px;
     white-space: nowrap;
     overflow: hidden;
@@ -23,3 +40,75 @@
 .deck-list-entry-axial-data {
     min-width: 2.75em !important;
 }
+
+/* Imitate scryfall button */
+.card-legality > dd.loading {
+    border: 1px solid rgba(85, 26, 139, 0.5);
+    background-color: #F9F7F5;
+    color: rgb(85, 26, 139);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/**
+ * ==============================================
+ * Dot Flashing by Zongbin
+ * Source: https://codepen.io/nzbin/pen/GGrXbp
+ * ==============================================
+ */
+.dot-flashing {
+    position: relative;
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: rgb(85, 26, 139);
+    color: rgb(85, 26, 139);
+    animation: dotFlashing 1s infinite linear alternate;
+    animation-delay: .5s;
+}
+
+.dot-flashing::before, .dot-flashing::after {
+    content: '';
+    display: inline-block;
+    position: absolute;
+    top: 0;
+}
+
+.dot-flashing::before {
+    left: -8px;
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: rgb(85, 26, 139);
+    color: rgb(85, 26, 139);
+    animation: dotFlashing 1s infinite alternate;
+    animation-delay: 0s;
+}
+
+.dot-flashing::after {
+    left: 8px;
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: rgb(85, 26, 139);
+    color: rgb(85, 26, 139);
+    animation: dotFlashing 1s infinite alternate;
+    animation-delay: 1s;
+}
+
+@keyframes dotFlashing {
+    0% {
+        background-color: rgb(85, 26, 139);
+    }
+    50%,
+    100% {
+        background-color: rgba(85, 26, 139, 0.15);
+    }
+}
+/**
+ * ==============================================
+ * End of Dot Flashing
+ * ==============================================
+ */
