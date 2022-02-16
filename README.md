@@ -27,3 +27,9 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 
 Icon: [Donkey icon](https://game-icons.net/1x1/skoll/donkey.html) by [Skoll](https://game-icons.net/) under [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/)  
 Recolored in #F5C823
+
+### Disclaimer
+
+Portions of "Scryfall - Casual Challenge Checker" are unofficial Fan Content permitted under the Wizards of the Coast Fan Content Policy. The information 
+presented on this extension about Magic: The Gathering, both literal and graphical, is copyrighted by Wizards of the Coast.
+This extension is not produced, endorsed, supported, or affiliated with Wizards of the Coast.
