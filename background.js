@@ -14,12 +14,27 @@ chrome.runtime.onMessage.addListener(
             case 'get/banlist':
                 getBanlist(sendResponse);
                 return;
+            case 'get/ban-status':
+                getBanStatus(request.cardName, sendResponse);
+                return;
             default:
                 console.error('Unknown action "' + request.action + '" in request.', request);
                 return;
         }
     },
 );
+
+function getBanStatus(cardName, sendResponse) {
+    if (bans.hasOwnProperty(cardName)) {
+        sendResponse('banned');
+    }
+
+    if (extendedBans.hasOwnProperty(cardName)) {
+        sendResponse('extended');
+    }
+
+    sendResponse('none');
+}
 
 function getBanlist(sendResponse) {
     sendResponse(

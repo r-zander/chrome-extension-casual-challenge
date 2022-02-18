@@ -1,0 +1,9 @@
+.card-legality-item > dt {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-legality-item > dd.extended {
+    background-color: #EFC20E;
+}
