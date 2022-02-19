@@ -4,9 +4,14 @@ const STORAGE_KEY_CARD_CACHE = 'cardCache';
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
 // const CACHE_DURATION = 10 * 1000;
 
+const DECK_MODE_DECKLIST = 'decklist';
+const DECK_MODE_VISUAL = 'visual';
+const DECK_MODE_UNKNOWN = 'unknown';
+
 let loadingIndicator,
     disabledButton,
     enabledButton;
+let deckMode = DECK_MODE_UNKNOWN;
 let deckWasChecked = false;
 
 function getDeckId() {
@@ -71,7 +76,12 @@ async function init() {
         disableChecks();
     });
 
-    if (document.querySelectorAll('.deck-list').length === 0) {
+    if (document.querySelectorAll('.deck-list').length !== 0) {
+        deckMode = DECK_MODE_DECKLIST;
+    } else if (document.querySelectorAll('.card-grid').length !== 0) {
+        deckMode = DECK_MODE_VISUAL;
+    } else {
+        deckMode = DECK_MODE_UNKNOWN;
         // Not displayed as deck list --> no deck check
         displayDisabled();
         return;
@@ -86,31 +96,64 @@ async function init() {
     await checkDeck();
 }
 
+function addLegalityElement(banlist, cardName, cardItem, bannedTemplate, extendedTemplate, loadingTemplate, cardsToLoad, deckListEntry) {
+    if (banlist.bans.hasOwnProperty(cardName)) {
+        cardItem.append(bannedTemplate.content.cloneNode(true));
+    } else if (banlist.extended.hasOwnProperty(cardName)) {
+        cardItem.append(extendedTemplate.content.cloneNode(true));
+    } else {
+        // We need some more infos about the card, so lets queue it for loading
+        cardItem.append(loadingTemplate.content.cloneNode(true));
+        cardsToLoad[deckListEntry.dataset.cardId] = deckListEntry;
+    }
+}
+
 function checkDeck() {
     document.querySelector('.deck').classList.add('casual-challenge-deck');
 
     if (deckWasChecked) {
         // Just show our elements
-        document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
-            element.classList.remove('hidden');
-        });
+        switch (deckMode) {
+            case DECK_MODE_DECKLIST:
+                document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
+                    element.classList.remove('hidden');
+                });
+                break;
+            case DECK_MODE_VISUAL:
+                // document.querySelectorAll('.card-grid-item > .card-legality').forEach(element => {
+                //     element.classList.remove('hidden');
+                // });
+                break;
+        }
 
         displayEnabled();
         return Promise.resolve();
     }
 
     const loadingTemplate = document.createElement('template');
-    loadingTemplate.innerHTML = '<dl class="card-legality"><dd class="loading"><div class="dot-flashing"></div></dd></dl>';
     const legalTemplate = document.createElement('template');
-    legalTemplate.innerHTML = '<dl class="card-legality"><dd class="legal">Legal</dd></dl>';
     const notLegalTemplate = document.createElement('template');
-    notLegalTemplate.innerHTML = '<dl class="card-legality"><dd class="not-legal">Not Legal</dd></dl>';
     const bannedTemplate = document.createElement('template');
-    bannedTemplate.innerHTML = '<dl class="card-legality"><dd class="banned">Banned</dd></dl>';
     const extendedTemplate = document.createElement('template');
-    extendedTemplate.innerHTML = '<dl class="card-legality"><dd class="extended">Extended</dd></dl>';
-// const restrictedTemplate = document.createElement('template');
-// restrictedTemplate.innerHTML = '<dl class="card-legality"><dd class="restricted">Restrict.</dd></dl>';
+
+    let templateFn;
+    switch (deckMode) {
+        case DECK_MODE_DECKLIST: {
+            templateFn = (cssClass, text, explanation) => `<dl class="card-legality"><dd class="${cssClass}">${text}</dd></dl>`;
+            break;
+        }
+        case DECK_MODE_VISUAL:
+            templateFn = (cssClass, text, explanation) => `<div class="legality-overlay ${cssClass}"></div>
+<span class="card-grid-item-count card-grid-item-legality ${cssClass}" title="${explanation}">${text}</span>`
+            break;
+    }
+
+    loadingTemplate.innerHTML = templateFn('loading', '<div class="dot-flashing"></div>', '');
+    legalTemplate.innerHTML = templateFn('legal', 'Legal', '');
+    notLegalTemplate.innerHTML = templateFn('not-legal', 'Not Legal', '');
+    bannedTemplate.innerHTML = templateFn('banned', 'Banned', '');
+    extendedTemplate.innerHTML = templateFn('extended', 'Extended', '');
+    // restrictedTemplate.innerHTML = templateFn('restricted', 'Restricted', '');
 
     let cardsToLoad = {};
 
@@ -127,18 +170,39 @@ function checkDeck() {
         .then((banlist) => {
             console.log('Received Casual Challenge ban list: ', banlist);
 
-            document.querySelectorAll('.deck-list-entry').forEach((deckListEntry) => {
-                let cardName = deckListEntry.querySelector('.deck-list-entry-name').innerText.trim();
-                if (banlist.bans.hasOwnProperty(cardName)) {
-                    deckListEntry.append(bannedTemplate.content.cloneNode(true));
-                } else if (banlist.extended.hasOwnProperty(cardName)) {
-                    deckListEntry.append(extendedTemplate.content.cloneNode(true));
-                } else {
-                    // We need some more infos about the card, so lets queue it for loading
-                    deckListEntry.append(loadingTemplate.content.cloneNode(true));
-                    cardsToLoad[deckListEntry.dataset.cardId] = deckListEntry;
-                }
-            });
+            switch (deckMode) {
+                case DECK_MODE_DECKLIST:
+                    document.querySelectorAll('.deck-list-entry').forEach((deckListEntry) => {
+                        let cardName = deckListEntry.querySelector('.deck-list-entry-name').innerText.trim();
+                        addLegalityElement(
+                            banlist,
+                            cardName,
+                            deckListEntry,
+                            bannedTemplate,
+                            extendedTemplate,
+                            loadingTemplate,
+                            cardsToLoad,
+                            deckListEntry);
+                    });
+                    break;
+                case DECK_MODE_VISUAL:
+                    document.querySelectorAll('.card-grid-item').forEach((deckListEntry) => {
+                        if (deckListEntry.classList.contains('flexbox-spacer')) return;
+
+                        let cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').innerText.trim();
+                        const cardItem = deckListEntry.querySelector('.card-grid-item-card');
+                        addLegalityElement(
+                            banlist,
+                            cardName,
+                            cardItem,
+                            bannedTemplate,
+                            extendedTemplate,
+                            loadingTemplate,
+                            cardsToLoad,
+                            deckListEntry);
+                    });
+                    break;
+            }
 
             let cardIdsToLoad = Object.keys(cardsToLoad);
             if (cardIdsToLoad.length === 0) {
@@ -150,12 +214,26 @@ function checkDeck() {
                     loadedCards.forEach(cardObject => {
                         const cardId = cardObject.id;
                         const deckListEntry = cardsToLoad[cardId];
-                        deckListEntry.querySelector('.card-legality').remove();
+                        switch (deckMode) {
+                            case DECK_MODE_DECKLIST:
+                                deckListEntry.querySelector('.card-legality').remove();
 
-                        if (cardObject.legalities.vintage === 'legal') {
-                            deckListEntry.append(legalTemplate.content.cloneNode(true));
-                        } else {
-                            deckListEntry.append(notLegalTemplate.content.cloneNode(true));
+                                if (cardObject.legalities.vintage === 'legal') {
+                                    deckListEntry.append(legalTemplate.content.cloneNode(true));
+                                } else {
+                                    deckListEntry.append(notLegalTemplate.content.cloneNode(true));
+                                }
+                                break;
+                            case DECK_MODE_VISUAL:
+                                deckListEntry.querySelector('.legality-overlay').remove();
+
+                                const cardItem = deckListEntry.querySelector('.card-grid-item-card');
+                                if (cardObject.legalities.vintage === 'legal') {
+                                    cardItem.append(legalTemplate.content.cloneNode(true));
+                                } else {
+                                    cardItem.append(notLegalTemplate.content.cloneNode(true));
+                                }
+                                break;
                         }
                     });
                 });
@@ -218,12 +296,12 @@ function loadCardsThroughCache(cardIdsToLoad) {
             });
 
             return fetch('https://api.scryfall.com/cards/collection',
-                         {
-                             method: 'POST',
-                             headers: {'Content-Type': 'application/json'},
-                             // TODO support more than 75 cards by paging?
-                             body: '{"identifiers": ' + JSON.stringify(identifiersToLoad.slice(0, 75)) + ' }',
-                         },
+                {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    // TODO support more than 75 cards by paging?
+                    body: '{"identifiers": ' + JSON.stringify(identifiersToLoad.slice(0, 75)) + ' }',
+                },
             )
                 .then(response => response.json())
                 // TODO handle not found

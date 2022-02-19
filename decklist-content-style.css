@@ -52,6 +52,75 @@
     align-items: center;
 }
 
+.legality-overlay {
+    z-index: 5;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    border: 4px solid;
+    border-radius: 9px;
+}
+
+.legality-overlay.legal {
+    border-color: #75986E;
+}
+.legality-overlay.legal {
+    border-color: #75986E;
+}
+.legality-overlay.extended {
+    border-color: #EFC20E;
+}
+.legality-overlay.banned {
+    border-color: #CF8184 /*rgba(167,31,42,0.58)*/;
+}
+.legality-overlay.restriced {
+    border-color: #84A7B7 /*rgba(36,103,130,0.58)*/;
+}
+.legality-overlay.not-legal {
+    border-color: #AEAEAE;
+}
+
+.card-grid-item-legality {
+    /* top: 45%; */
+    left: auto !important;;
+    right: 11% !important;;
+    border-right: 2px solid rgba(0, 0, 0, 0.5) !important;
+
+    min-width: 42px;
+    /*max-width: 42px;*/
+    /*white-space: nowrap;*/
+    /*text-overflow: ellipsis;*/
+    /*overflow: hidden;*/
+
+    display: none !important;
+}
+
+.card-grid-item-card:hover > .card-grid-item-legality,
+.card-grid-item-card:active > .card-grid-item-legality,
+.card-grid-item-card:focus > .card-grid-item-legality {
+    display: flex !important;
+}
+
+.card-grid-item-legality.legal {
+    background-color: #75986E;
+}
+.card-grid-item-legality.extended {
+    background-color: #EFC20E;
+}
+.card-grid-item-legality.banned {
+    background-color: #CF8184 /*rgba(167,31,42,0.58)*/;
+}
+.card-grid-item-legality.restriced {
+    border-color: #84A7B7 /*rgba(36,103,130,0.58)*/;
+}
+.card-grid-item-legality.not-legal {
+    background-color: #AEAEAE;
+}
+
 /**
  * ==============================================
  * Dot Flashing by Zongbin

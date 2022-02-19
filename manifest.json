@@ -25,7 +25,7 @@
     {
       "matches": ["https://scryfall.com/*/decks/*"],
       "run_at": "document_idle",
-      "css": ["content-style.css"],
+      "css": ["decklist-content-style.css"],
       "js": ["decklist-content-script.js"]
     },
     {
