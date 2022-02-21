@@ -2,7 +2,6 @@ const STORAGE_KEY_ENABLED_DECKS = 'enabledDecks';
 const STORAGE_KEY_CARD_CACHE = 'cardCache';
 // 7 days aka 1 week (mostly)
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
-// const CACHE_DURATION = 10 * 1000;
 
 const DECK_MODE_DECKLIST = 'decklist';
 const DECK_MODE_VISUAL = 'visual';
@@ -62,7 +61,7 @@ async function init() {
          <button class="casual-challenge-checks-enabled button-n primary tiny hidden">Disable checks</button>
     </div>`;
 
-    // By template already `displayLoading`
+    // The sidebar already is set to display 'loading', no need to adjust the mode
     document.querySelector('.sidebar-prices').after(sidebarTemplate.content);
 
     loadingIndicator = document.querySelector('.casual-challenge-checks-loading');
@@ -120,21 +119,16 @@ function checkDeck() {
                 });
                 break;
             case DECK_MODE_VISUAL:
-                // document.querySelectorAll('.card-grid-item > .card-legality').forEach(element => {
-                //     element.classList.remove('hidden');
-                // });
+                document.querySelectorAll('.card-grid-item-card > .legality-overlay, .card-grid-item-card > .card-grid-item-legality')
+                    .forEach(element => {
+                        element.classList.remove('hidden');
+                    });
                 break;
         }
 
         displayEnabled();
         return Promise.resolve();
     }
-
-    const loadingTemplate = document.createElement('template');
-    const legalTemplate = document.createElement('template');
-    const notLegalTemplate = document.createElement('template');
-    const bannedTemplate = document.createElement('template');
-    const extendedTemplate = document.createElement('template');
 
     let templateFn;
     switch (deckMode) {
@@ -148,12 +142,16 @@ function checkDeck() {
             break;
     }
 
+    const loadingTemplate = document.createElement('template');
+    const legalTemplate = document.createElement('template');
+    const notLegalTemplate = document.createElement('template');
+    const bannedTemplate = document.createElement('template');
+    const extendedTemplate = document.createElement('template');
     loadingTemplate.innerHTML = templateFn('loading', '<div class="dot-flashing"></div>', '');
     legalTemplate.innerHTML = templateFn('legal', 'Legal', '');
     notLegalTemplate.innerHTML = templateFn('not-legal', 'Not Legal', '');
     bannedTemplate.innerHTML = templateFn('banned', 'Banned', '');
     extendedTemplate.innerHTML = templateFn('extended', 'Extended', '');
-    // restrictedTemplate.innerHTML = templateFn('restricted', 'Restricted', '');
 
     let cardsToLoad = {};
 
@@ -365,11 +363,10 @@ function enableChecks() {
     displayLoading();
     storeDeckCheckFlag(true)
         .then(() => {
-            if (document.querySelectorAll('.deck-list').length === 0 || // In list mode?
+            if (deckMode === DECK_MODE_DECKLIST &&
                 document.getElementById('with').value !== 'eur') { // showing euros?
                 // ... otherwise: switch to correct view
                 let queryParameters = new URLSearchParams(location.search);
-                queryParameters.set('as', 'list');
                 queryParameters.set('with', 'eur');
                 location.search = queryParameters.toString();
             } else {
@@ -385,9 +382,19 @@ function disableChecks() {
             if (deckWasChecked) {
                 // Hide everything we added
                 document.querySelector('.deck').classList.remove('casual-challenge-deck');
-                document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
-                    element.classList.add('hidden');
-                });
+                switch (deckMode) {
+                    case DECK_MODE_DECKLIST:
+                        document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
+                            element.classList.add('hidden');
+                        });
+                        break;
+                    case DECK_MODE_VISUAL:
+                        document.querySelectorAll('.card-grid-item-card > .legality-overlay, .card-grid-item-card > .card-grid-item-legality')
+                            .forEach(element => {
+                                element.classList.add('hidden');
+                            });
+                        break;
+                }
             }
 
             displayDisabled();

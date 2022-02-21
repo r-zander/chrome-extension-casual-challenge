@@ -88,7 +88,7 @@
     /* top: 45%; */
     left: auto !important;;
     right: 11% !important;;
-    border-right: 2px solid rgba(0, 0, 0, 0.5) !important;
+    border-right: 2px solid rgba(0, 0, 0, 0.133) !important;
 
     min-width: 42px;
     /*max-width: 42px;*/
@@ -99,9 +99,9 @@
     display: none !important;
 }
 
-.card-grid-item-card:hover > .card-grid-item-legality,
-.card-grid-item-card:active > .card-grid-item-legality,
-.card-grid-item-card:focus > .card-grid-item-legality {
+.card-grid-item-card:hover > .card-grid-item-legality:not(.hidden),
+.card-grid-item-card:active > .card-grid-item-legality:not(.hidden),
+.card-grid-item-card:focus > .card-grid-item-legality:not(.hidden) {
     display: flex !important;
 }
 

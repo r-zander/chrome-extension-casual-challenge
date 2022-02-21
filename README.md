@@ -13,12 +13,12 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
   - [x] **OPTIONAL** Extended: anything on the extended banlist
   - [x] --> everything else = legal
 - [x] Cache card infos for 1 week
+- [x] Add a section "Casual Challenge" in the regular legality on a single card view
 
 ## Additional Features
 
 - [x] Switch display to `?with=eur&as=list`
 - [ ] Show tooltip to display why something is not legal
-- [ ] Add a section "Casual Challenge" in the regular legality on a single card view
 - [ ] Fix printings to cheapest print
 - [ ] Have options that allow to set what deck names are considered "Casual Challenge"
 - [ ] **OPTIONAL** Clear cache button
