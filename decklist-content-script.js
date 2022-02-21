@@ -3,14 +3,17 @@ const STORAGE_KEY_CARD_CACHE = 'cardCache';
 // 7 days aka 1 week (mostly)
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
 
+const CONTENT_MODE_UNKNOWN = 'unknown';
+
 const DECK_MODE_DECKLIST = 'decklist';
 const DECK_MODE_VISUAL = 'visual';
 const DECK_MODE_UNKNOWN = 'unknown';
+const CONTENT_MODE_SEARCH_IMAGES = 'search_images';
 
 let loadingIndicator,
     disabledButton,
     enabledButton;
-let deckMode = DECK_MODE_UNKNOWN;
+let contentMode = CONTENT_MODE_UNKNOWN;
 let deckWasChecked = false;
 
 function getDeckId() {
@@ -19,6 +22,12 @@ function getDeckId() {
 }
 
 async function isCasualChallengeDeck() {
+    switch (contentMode) {
+        case CONTENT_MODE_SEARCH_IMAGES:
+            return true;
+    }
+
+
     let enabledDecks = await chrome.storage.sync.get([STORAGE_KEY_ENABLED_DECKS]);
     if (enabledDecks.hasOwnProperty(STORAGE_KEY_ENABLED_DECKS)) {
         enabledDecks = enabledDecks[STORAGE_KEY_ENABLED_DECKS];
@@ -51,7 +60,7 @@ async function isCasualChallengeDeck() {
     return (enabled === true);
 }
 
-async function init() {
+function initSidebar() {
     const sidebarTemplate = document.createElement('template');
     sidebarTemplate.innerHTML = `
     <div class="sidebar-toolbox casual-challenge">
@@ -74,16 +83,20 @@ async function init() {
     enabledButton.addEventListener('click', () => {
         disableChecks();
     });
+}
 
-    if (document.querySelectorAll('.deck-list').length !== 0) {
-        deckMode = DECK_MODE_DECKLIST;
-    } else if (document.querySelectorAll('.card-grid').length !== 0) {
-        deckMode = DECK_MODE_VISUAL;
-    } else {
-        deckMode = DECK_MODE_UNKNOWN;
-        // Not displayed as deck list --> no deck check
-        displayDisabled();
-        return;
+async function init() {
+    contentMode = detectContentMode();
+
+    switch (contentMode) {
+        case DECK_MODE_DECKLIST:
+        case DECK_MODE_VISUAL:
+            initSidebar();
+            break;
+        case CONTENT_MODE_UNKNOWN:
+            // Not a supported view --> no legality check
+            displayDisabled();
+            return;
     }
 
     if (!await isCasualChallengeDeck()) {
@@ -93,6 +106,30 @@ async function init() {
 
     // Deck title contains 'Casual Challenge' so we can start.
     await checkDeck();
+}
+
+function detectContentMode() {
+    if (location.pathname === '/search') {
+        const modeSelector = document.getElementById('as');
+        switch (modeSelector.value) {
+            case 'grid':
+                return CONTENT_MODE_SEARCH_IMAGES;
+        }
+
+        return CONTENT_MODE_UNKNOWN;
+    }
+
+    if (location.pathname.match(/\/decks\//)) {
+        if (document.querySelectorAll('.deck-list').length !== 0) {
+            return DECK_MODE_DECKLIST;
+        } else if (document.querySelectorAll('.card-grid').length !== 0) {
+            return DECK_MODE_VISUAL;
+        } else {
+            return CONTENT_MODE_UNKNOWN;
+        }
+    }
+
+    return CONTENT_MODE_UNKNOWN;
 }
 
 function addLegalityElement(banlist, cardName, cardItem, bannedTemplate, extendedTemplate, loadingTemplate, cardsToLoad, deckListEntry) {
@@ -108,11 +145,16 @@ function addLegalityElement(banlist, cardName, cardItem, bannedTemplate, extende
 }
 
 function checkDeck() {
-    document.querySelector('.deck').classList.add('casual-challenge-deck');
+    switch (contentMode) {
+        case DECK_MODE_DECKLIST:
+        case DECK_MODE_VISUAL:
+            document.querySelector('.deck').classList.add('casual-challenge-deck');
+            break;
+    }
 
     if (deckWasChecked) {
         // Just show our elements
-        switch (deckMode) {
+        switch (contentMode) {
             case DECK_MODE_DECKLIST:
                 document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
                     element.classList.remove('hidden');
@@ -131,12 +173,13 @@ function checkDeck() {
     }
 
     let templateFn;
-    switch (deckMode) {
+    switch (contentMode) {
         case DECK_MODE_DECKLIST: {
             templateFn = (cssClass, text, explanation) => `<dl class="card-legality"><dd class="${cssClass}">${text}</dd></dl>`;
             break;
         }
         case DECK_MODE_VISUAL:
+        case CONTENT_MODE_SEARCH_IMAGES:
             templateFn = (cssClass, text, explanation) => `<div class="legality-overlay ${cssClass}"></div>
 <span class="card-grid-item-count card-grid-item-legality ${cssClass}" title="${explanation}">${text}</span>`
             break;
@@ -168,7 +211,7 @@ function checkDeck() {
         .then((banlist) => {
             console.log('Received Casual Challenge ban list: ', banlist);
 
-            switch (deckMode) {
+            switch (contentMode) {
                 case DECK_MODE_DECKLIST:
                     document.querySelectorAll('.deck-list-entry').forEach((deckListEntry) => {
                         let cardName = deckListEntry.querySelector('.deck-list-entry-name').innerText.trim();
@@ -184,6 +227,7 @@ function checkDeck() {
                     });
                     break;
                 case DECK_MODE_VISUAL:
+                case CONTENT_MODE_SEARCH_IMAGES:
                     document.querySelectorAll('.card-grid-item').forEach((deckListEntry) => {
                         if (deckListEntry.classList.contains('flexbox-spacer')) return;
 
@@ -212,7 +256,7 @@ function checkDeck() {
                     loadedCards.forEach(cardObject => {
                         const cardId = cardObject.id;
                         const deckListEntry = cardsToLoad[cardId];
-                        switch (deckMode) {
+                        switch (contentMode) {
                             case DECK_MODE_DECKLIST:
                                 deckListEntry.querySelector('.card-legality').remove();
 
@@ -223,6 +267,7 @@ function checkDeck() {
                                 }
                                 break;
                             case DECK_MODE_VISUAL:
+                            case CONTENT_MODE_SEARCH_IMAGES:
                                 deckListEntry.querySelector('.legality-overlay').remove();
 
                                 const cardItem = deckListEntry.querySelector('.card-grid-item-card');
@@ -325,6 +370,12 @@ function loadCardsThroughCache(cardIdsToLoad) {
 
 function displayLoading() {
     console.log('isEnabled', 'loading');
+
+    switch (contentMode) {
+        case CONTENT_MODE_SEARCH_IMAGES:
+            return;
+    }
+
     loadingIndicator.classList.remove('hidden');
     disabledButton.classList.add('hidden');
     enabledButton.classList.add('hidden');
@@ -332,6 +383,12 @@ function displayLoading() {
 
 function displayEnabled() {
     console.log('isEnabled', true);
+
+    switch (contentMode) {
+        case CONTENT_MODE_SEARCH_IMAGES:
+            return;
+    }
+
     loadingIndicator.classList.add('hidden');
     disabledButton.classList.add('hidden');
     enabledButton.classList.remove('hidden');
@@ -339,6 +396,12 @@ function displayEnabled() {
 
 function displayDisabled() {
     console.log('isEnabled', false);
+
+    switch (contentMode) {
+        case CONTENT_MODE_SEARCH_IMAGES:
+            return;
+    }
+
     loadingIndicator.classList.add('hidden');
     disabledButton.classList.remove('hidden');
     enabledButton.classList.add('hidden');
@@ -363,7 +426,7 @@ function enableChecks() {
     displayLoading();
     storeDeckCheckFlag(true)
         .then(() => {
-            if (deckMode === DECK_MODE_DECKLIST &&
+            if (contentMode === DECK_MODE_DECKLIST &&
                 document.getElementById('with').value !== 'eur') { // showing euros?
                 // ... otherwise: switch to correct view
                 let queryParameters = new URLSearchParams(location.search);
@@ -382,7 +445,7 @@ function disableChecks() {
             if (deckWasChecked) {
                 // Hide everything we added
                 document.querySelector('.deck').classList.remove('casual-challenge-deck');
-                switch (deckMode) {
+                switch (contentMode) {
                     case DECK_MODE_DECKLIST:
                         document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
                             element.classList.add('hidden');

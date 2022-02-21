@@ -23,7 +23,7 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://scryfall.com/*/decks/*"],
+      "matches": ["https://scryfall.com/*/decks/*", "https://scryfall.com/search?*"],
       "run_at": "document_idle",
       "css": ["decklist-content-style.css"],
       "js": ["decklist-content-script.js"]

@@ -14,6 +14,14 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
   - [x] --> everything else = legal
 - [x] Cache card infos for 1 week
 - [x] Add a section "Casual Challenge" in the regular legality on a single card view
+- [ ] Search view
+  - [in progress] Grid/Image/Visual view
+  - [ ] Nice loading display
+  - [ ] add buttons to define behavior
+    - [ ] ignore casual challenge
+    - [ ] show not-legal (faded out), banned & extended with border + hover
+    - [ ] hide everything not legal in casual challenge, and extended with border+hover
+- [ ] add explanation of supported views in Extension description
 
 ## Additional Features
 
