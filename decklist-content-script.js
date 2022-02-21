@@ -27,7 +27,6 @@ async function isCasualChallengeDeck() {
             return true;
     }
 
-
     let enabledDecks = await chrome.storage.sync.get([STORAGE_KEY_ENABLED_DECKS]);
     if (enabledDecks.hasOwnProperty(STORAGE_KEY_ENABLED_DECKS)) {
         enabledDecks = enabledDecks[STORAGE_KEY_ENABLED_DECKS];
@@ -140,7 +139,11 @@ function addLegalityElement(banlist, cardName, cardItem, bannedTemplate, extende
     } else {
         // We need some more infos about the card, so lets queue it for loading
         cardItem.append(loadingTemplate.content.cloneNode(true));
-        cardsToLoad[deckListEntry.dataset.cardId] = deckListEntry;
+        if (cardsToLoad.hasOwnProperty(deckListEntry.dataset.cardId)) {
+            cardsToLoad[deckListEntry.dataset.cardId] = [cardsToLoad[deckListEntry.dataset.cardId], deckListEntry];
+        } else {
+            cardsToLoad[deckListEntry.dataset.cardId] = deckListEntry;
+        }
     }
 }
 
@@ -181,7 +184,7 @@ function checkDeck() {
         case DECK_MODE_VISUAL:
         case CONTENT_MODE_SEARCH_IMAGES:
             templateFn = (cssClass, text, explanation) => `<div class="legality-overlay ${cssClass}"></div>
-<span class="card-grid-item-count card-grid-item-legality ${cssClass}" title="${explanation}">${text}</span>`
+<span class="card-grid-item-count card-grid-item-legality ${cssClass}" title="${explanation}">${text}</span>`;
             break;
     }
 
@@ -223,13 +226,16 @@ function checkDeck() {
                             extendedTemplate,
                             loadingTemplate,
                             cardsToLoad,
-                            deckListEntry);
+                            deckListEntry,
+                        );
                     });
                     break;
                 case DECK_MODE_VISUAL:
                 case CONTENT_MODE_SEARCH_IMAGES:
                     document.querySelectorAll('.card-grid-item').forEach((deckListEntry) => {
-                        if (deckListEntry.classList.contains('flexbox-spacer')) return;
+                        if (deckListEntry.classList.contains('flexbox-spacer')) {
+                            return;
+                        }
 
                         let cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').innerText.trim();
                         const cardItem = deckListEntry.querySelector('.card-grid-item-card');
@@ -241,7 +247,8 @@ function checkDeck() {
                             extendedTemplate,
                             loadingTemplate,
                             cardsToLoad,
-                            deckListEntry);
+                            deckListEntry,
+                        );
                     });
                     break;
             }
@@ -256,27 +263,38 @@ function checkDeck() {
                     loadedCards.forEach(cardObject => {
                         const cardId = cardObject.id;
                         const deckListEntry = cardsToLoad[cardId];
+                        let appendToDeckListEntry;
                         switch (contentMode) {
                             case DECK_MODE_DECKLIST:
-                                deckListEntry.querySelector('.card-legality').remove();
+                                appendToDeckListEntry = (deckListEntry) => {
+                                    deckListEntry.querySelector('.card-legality').remove();
 
-                                if (cardObject.legalities.vintage === 'legal') {
-                                    deckListEntry.append(legalTemplate.content.cloneNode(true));
-                                } else {
-                                    deckListEntry.append(notLegalTemplate.content.cloneNode(true));
-                                }
+                                    if (cardObject.legalities.vintage === 'legal') {
+                                        deckListEntry.append(legalTemplate.content.cloneNode(true));
+                                    } else {
+                                        deckListEntry.append(notLegalTemplate.content.cloneNode(true));
+                                    }
+                                };
                                 break;
                             case DECK_MODE_VISUAL:
                             case CONTENT_MODE_SEARCH_IMAGES:
-                                deckListEntry.querySelector('.legality-overlay').remove();
+                                appendToDeckListEntry = (deckListEntry) => {
+                                    deckListEntry.querySelector('.legality-overlay').remove();
 
-                                const cardItem = deckListEntry.querySelector('.card-grid-item-card');
-                                if (cardObject.legalities.vintage === 'legal') {
-                                    cardItem.append(legalTemplate.content.cloneNode(true));
-                                } else {
-                                    cardItem.append(notLegalTemplate.content.cloneNode(true));
-                                }
+                                    const cardItem = deckListEntry.querySelector('.card-grid-item-card');
+                                    if (cardObject.legalities.vintage === 'legal') {
+                                        cardItem.append(legalTemplate.content.cloneNode(true));
+                                    } else {
+                                        cardItem.append(notLegalTemplate.content.cloneNode(true));
+                                    }
+                                };
                                 break;
+                        }
+
+                        if (Array.isArray(deckListEntry)) {
+                            deckListEntry.forEach(appendToDeckListEntry);
+                        } else {
+                            appendToDeckListEntry(deckListEntry);
                         }
                     });
                 });
@@ -304,7 +322,6 @@ function loadCardsThroughCache(cardIdsToLoad) {
                 cardCache = {};
             } else {
                 cardCache = cardCacheFromStorage[STORAGE_KEY_CARD_CACHE];
-
 
                 // Each card id either ends up either in the loadedCards (because
                 // it was found fresh in cache.
@@ -339,12 +356,12 @@ function loadCardsThroughCache(cardIdsToLoad) {
             });
 
             return fetch('https://api.scryfall.com/cards/collection',
-                {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    // TODO support more than 75 cards by paging?
-                    body: '{"identifiers": ' + JSON.stringify(identifiersToLoad.slice(0, 75)) + ' }',
-                },
+                         {
+                             method: 'POST',
+                             headers: {'Content-Type': 'application/json'},
+                             // TODO support more than 75 cards by paging?
+                             body: '{"identifiers": ' + JSON.stringify(identifiersToLoad.slice(0, 75)) + ' }',
+                         },
             )
                 .then(response => response.json())
                 // TODO handle not found

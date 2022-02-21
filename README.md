@@ -22,6 +22,7 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
     - [ ] show not-legal (faded out), banned & extended with border + hover
     - [ ] hide everything not legal in casual challenge, and extended with border+hover
 - [ ] add explanation of supported views in Extension description
+- [x] Bug: If a card appears more than once, only the last instance is correctly loaded
 
 ## Additional Features
 
