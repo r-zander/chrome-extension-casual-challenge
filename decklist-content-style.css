@@ -65,21 +65,26 @@
     border-radius: 9px;
 }
 
+.legality-overlay.loading {
+    border-color: #551A8B;
+}
+
 .legality-overlay.legal {
     border-color: #75986E;
 }
-.legality-overlay.legal {
-    border-color: #75986E;
-}
+
 .legality-overlay.extended {
     border-color: #EFC20E;
 }
+
 .legality-overlay.banned {
     border-color: #CF8184 /*rgba(167,31,42,0.58)*/;
 }
+
 .legality-overlay.restriced {
     border-color: #84A7B7 /*rgba(36,103,130,0.58)*/;
 }
+
 .legality-overlay.not-legal {
     border-color: #AEAEAE;
 }
@@ -105,18 +110,28 @@
     display: flex !important;
 }
 
+.card-grid-item-legality.loading {
+    background-color: #F9F7F5;
+    border: 2px solid #551A8B;
+    border-right-color: #41146B !important;
+}
+
 .card-grid-item-legality.legal {
     background-color: #75986E;
 }
+
 .card-grid-item-legality.extended {
     background-color: #EFC20E;
 }
+
 .card-grid-item-legality.banned {
     background-color: #CF8184 /*rgba(167,31,42,0.58)*/;
 }
+
 .card-grid-item-legality.restriced {
     border-color: #84A7B7 /*rgba(36,103,130,0.58)*/;
 }
+
 .card-grid-item-legality.not-legal {
     background-color: #AEAEAE;
 }
@@ -132,8 +147,8 @@
     width: 5px;
     height: 5px;
     border-radius: 3px;
-    background-color: rgb(85, 26, 139);
-    color: rgb(85, 26, 139);
+    background-color: #551A8B;
+    color: #551A8B;
     animation: dotFlashing 1s infinite linear alternate;
     animation-delay: .5s;
 }
@@ -150,8 +165,8 @@
     width: 5px;
     height: 5px;
     border-radius: 3px;
-    background-color: rgb(85, 26, 139);
-    color: rgb(85, 26, 139);
+    background-color: #551A8B;
+    color: #551A8B;
     animation: dotFlashing 1s infinite alternate;
     animation-delay: 0s;
 }
@@ -161,21 +176,22 @@
     width: 5px;
     height: 5px;
     border-radius: 3px;
-    background-color: rgb(85, 26, 139);
-    color: rgb(85, 26, 139);
+    background-color: #551A8B;
+    color: #551A8B;
     animation: dotFlashing 1s infinite alternate;
     animation-delay: 1s;
 }
 
 @keyframes dotFlashing {
     0% {
-        background-color: rgb(85, 26, 139);
+        background-color: #551A8B;
     }
     50%,
     100% {
         background-color: rgba(85, 26, 139, 0.15);
     }
 }
+
 /**
  * ==============================================
  * End of Dot Flashing

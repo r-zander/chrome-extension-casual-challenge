@@ -280,7 +280,7 @@ function checkDeck() {
                             case CONTENT_MODE_SEARCH_IMAGES:
                                 appendToDeckListEntry = (deckListEntry) => {
                                     deckListEntry.querySelector('.legality-overlay').remove();
-
+                                    deckListEntry.querySelector('.card-grid-item-legality').remove();
                                     const cardItem = deckListEntry.querySelector('.card-grid-item-card');
                                     if (cardObject.legalities.vintage === 'legal') {
                                         cardItem.append(legalTemplate.content.cloneNode(true));
