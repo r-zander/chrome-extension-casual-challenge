@@ -89,7 +89,7 @@
     border-color: #AEAEAE;
 }
 
-.card-grid-item-legality {
+.card-grid-item-count.card-grid-item-legality {
     /* top: 45%; */
     left: auto !important;;
     right: 11% !important;;
@@ -101,13 +101,13 @@
     /*text-overflow: ellipsis;*/
     /*overflow: hidden;*/
 
-    display: none !important;
+    display: none;
 }
 
 .card-grid-item-card:hover > .card-grid-item-legality:not(.hidden),
 .card-grid-item-card:active > .card-grid-item-legality:not(.hidden),
 .card-grid-item-card:focus > .card-grid-item-legality:not(.hidden) {
-    display: flex !important;
+    display: flex;
 }
 
 .card-grid-item-legality.loading {
@@ -134,6 +134,19 @@
 
 .card-grid-item-legality.not-legal {
     background-color: #AEAEAE;
+}
+
+.mode-search-images .legality-overlay.loading,
+.mode-search-images .card-grid-item-card > .card-grid-item-legality.loading,
+.mode-search-images .legality-overlay.not-legal,
+.mode-search-images .legality-overlay.legal,
+.mode-search-images .card-grid-item-card > .card-grid-item-legality.legal {
+    display: none;
+}
+
+.mode-search-images .card-grid-item-card.not-legal > .card-grid-item-card-faces,
+.mode-search-images .card-grid-item-card.banned > .card-grid-item-card-faces{
+    opacity: 60%;
 }
 
 /**
