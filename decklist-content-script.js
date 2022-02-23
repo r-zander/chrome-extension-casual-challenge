@@ -84,7 +84,26 @@ function initSidebar() {
     });
 }
 
-function addGlobalClass(cssClass){
+function initSearchControls() {
+    const searchControlTemplate = document.createElement('template');
+    searchControlTemplate.innerHTML = `
+    <div class="search-controls-casual-challenge">
+         <div class="casual-challenge-checks-loading button-n tiny"><div class="dot-flashing"></div></div>
+<!--         <label for="order">Casual Challenge check</label>-->
+         <select id="check" title="Change how cards are checked for Casual Challenge" class="select-n">
+            <option selected="selected" value="disabled">Disabled</option>
+            <option value="overlay">Overlays</option>
+            <option value="filter">Filtered</option>
+        </select>
+    </div>`;
+
+    document.querySelector('.search-controls-inner > .search-controls-display-options').after(searchControlTemplate.content);
+
+    loadingIndicator = document.querySelector('.casual-challenge-checks-loading');
+    loadingIndicator.classList.add('hidden');
+}
+
+function addGlobalClass(cssClass) {
     document.querySelector('#main').classList.add(cssClass);
 }
 
@@ -102,6 +121,7 @@ async function init() {
             break;
         case CONTENT_MODE_SEARCH_IMAGES:
             addGlobalClass('mode-search-images');
+            initSearchControls();
             break;
         case CONTENT_MODE_UNKNOWN:
             // Not a supported view --> no legality check
@@ -376,12 +396,12 @@ function loadCardsThroughCache(cardIdsToLoad) {
             });
 
             return fetch('https://api.scryfall.com/cards/collection',
-                         {
-                             method: 'POST',
-                             headers: {'Content-Type': 'application/json'},
-                             // TODO support more than 75 cards by paging?
-                             body: '{"identifiers": ' + JSON.stringify(identifiersToLoad.slice(0, 75)) + ' }',
-                         },
+                {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    // TODO support more than 75 cards by paging?
+                    body: '{"identifiers": ' + JSON.stringify(identifiersToLoad.slice(0, 75)) + ' }',
+                },
             )
                 .then(response => response.json())
                 // TODO handle not found

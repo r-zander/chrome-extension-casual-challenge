@@ -138,14 +138,13 @@
 
 .mode-search-images .legality-overlay.loading,
 .mode-search-images .card-grid-item-card > .card-grid-item-legality.loading,
-.mode-search-images .legality-overlay.not-legal,
 .mode-search-images .legality-overlay.legal,
 .mode-search-images .card-grid-item-card > .card-grid-item-legality.legal {
     display: none;
 }
 
 .mode-search-images .card-grid-item-card.not-legal > .card-grid-item-card-faces,
-.mode-search-images .card-grid-item-card.banned > .card-grid-item-card-faces{
+.mode-search-images .card-grid-item-card.banned > .card-grid-item-card-faces {
     opacity: 60%;
 }
 

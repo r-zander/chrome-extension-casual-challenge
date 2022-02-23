@@ -15,12 +15,13 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 - [x] Cache card infos for 1 week
 - [x] Add a section "Casual Challenge" in the regular legality on a single card view
 - [ ] Search view
-  - [in progress] Grid/Image/Visual view
+  - [x] Grid/Image/Visual view
   - [ ] Nice loading display
-  - [ ] add buttons to define behavior
+  - [in progress] add buttons to define behavior
     - [ ] ignore casual challenge
     - [ ] show not-legal (faded out), banned & extended with border + hover
     - [ ] hide everything not legal in casual challenge, and extended with border+hover
+  - [ ] Set view https://scryfall.com/sets/vma?as=grid&order=set
 - [ ] add explanation of supported views in Extension description
 - [x] Bug: If a card appears more than once, only the last instance is correctly loaded
 
