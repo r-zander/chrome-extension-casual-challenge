@@ -24,6 +24,7 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
   - [ ] Set view https://scryfall.com/sets/vma?as=grid&order=set
 - [ ] add explanation of supported views in Extension description
 - [x] Bug: If a card appears more than once, only the last instance is correctly loaded
+- [ ] Auto clear card cache if running out of local storage
 
 ## Additional Features
 
