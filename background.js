@@ -1,3 +1,4 @@
+const vintageRestricted = loadVintageRestricted();
 const bans = loadBans(loadRawBans);
 const extendedBans = loadBans(loadRawExtendedBans);
 
@@ -47,6 +48,10 @@ function getBanlist(sendResponse) {
 function loadBans(fn) {
     let bans = {};
     fn().forEach(ban => {
+        // Filter out any vintage restricted cards, as they should
+        // appear as "not legal" and neither 'banned' nor 'extended'
+        if (vintageRestricted.hasOwnProperty(ban.name)) return;
+
         bans[ban.name] = ban.formats;
     });
     return bans;
@@ -2179,4 +2184,59 @@ function loadRawExtendedBans() {
         {"name":"Young Wolf", "formats": ["Pauper (5%)"]}
     ];
     // @formatter:on
+}
+
+function loadVintageRestricted() {
+    return {
+        "Ancestral Recall": true,
+        "Balance": true,
+        "Black Lotus": true,
+        "Brainstorm": true,
+        "Chalice of the Void": true,
+        "Channel": true,
+        "Demonic Consultation": true,
+        "Demonic Tutor": true,
+        "Dig Through Time": true,
+        "Flash": true,
+        "Gitaxian Probe": true,
+        "Golgari Grave-Troll": true,
+        "Gush": true,
+        "Imperial Seal": true,
+        "Karn, the Great Creator": true,
+        "Library of Alexandria": true,
+        "Lion's Eye Diamond": true,
+        "Lodestone Golem": true,
+        "Lotus Petal": true,
+        "Mana Crypt": true,
+        "Mana Vault": true,
+        "Memory Jar": true,
+        "Mental Misstep": true,
+        "Merchant Scroll": true,
+        "Mind's Desire": true,
+        "Monastery Mentor": true,
+        "Mox Emerald": true,
+        "Mox Jet": true,
+        "Mox Pearl": true,
+        "Mox Ruby": true,
+        "Mox Sapphire": true,
+        "Mystical Tutor": true,
+        "Mystic Forge": true,
+        "Narset, Parter of Veils": true,
+        "Necropotence": true,
+        "Ponder": true,
+        "Sol Ring": true,
+        "Strip Mine": true,
+        "Thorn of Amethyst": true,
+        "Timetwister": true,
+        "Time Vault": true,
+        "Time Walk": true,
+        "Tinker": true,
+        "Tolarian Academy": true,
+        "Treasure Cruise": true,
+        "Trinisphere": true,
+        "Vampiric Tutor": true,
+        "Wheel of Fortune": true,
+        "Windfall": true,
+        "Yawgmoth's Will": true
+    }
 }

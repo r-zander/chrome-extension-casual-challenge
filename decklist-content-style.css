@@ -10,6 +10,26 @@
     color: inherit;
 }
 
+.search-controls-casual-challenge {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -webkit-flex-flow: row nowrap;
+    -ms-flex-flow: row nowrap;
+    flex-flow: row nowrap;
+    -webkit-box-pack: start;
+    -webkit-justify-content: flex-start;
+    -ms-flex-pack: start;
+    justify-content: flex-start;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
+    align-items: center;
+}
+
 .casual-challenge > .button-n {
     margin: 0 !important;
 }
@@ -41,7 +61,7 @@
     min-width: 2.75em !important;
 }
 
-/* Imitate scryfall button */
+/* Imitate Scryfall button */
 .card-legality > dd.loading {
     border: 1px solid rgba(85, 26, 139, 0.5);
     background-color: #F9F7F5;
@@ -78,11 +98,11 @@
 }
 
 .legality-overlay.banned {
-    border-color: #CF8184 /*rgba(167,31,42,0.58)*/;
+    border-color: #CF8184;
 }
 
 .legality-overlay.restriced {
-    border-color: #84A7B7 /*rgba(36,103,130,0.58)*/;
+    border-color: #84A7B7;
 }
 
 .legality-overlay.not-legal {
@@ -90,16 +110,11 @@
 }
 
 .card-grid-item-count.card-grid-item-legality {
-    /* top: 45%; */
-    left: auto !important;;
-    right: 11% !important;;
-    border-right: 2px solid rgba(0, 0, 0, 0.133) !important;
+    left: auto;
+    right: 11%;
+    border-right: 2px solid rgba(0, 0, 0, 0.133);
 
     min-width: 42px;
-    /*max-width: 42px;*/
-    /*white-space: nowrap;*/
-    /*text-overflow: ellipsis;*/
-    /*overflow: hidden;*/
 
     display: none;
 }
@@ -125,26 +140,26 @@
 }
 
 .card-grid-item-legality.banned {
-    background-color: #CF8184 /*rgba(167,31,42,0.58)*/;
+    background-color: #CF8184;
 }
 
 .card-grid-item-legality.restriced {
-    border-color: #84A7B7 /*rgba(36,103,130,0.58)*/;
+    border-color: #84A7B7;
 }
 
 .card-grid-item-legality.not-legal {
     background-color: #AEAEAE;
 }
 
-.mode-search-images .legality-overlay.loading,
-.mode-search-images .card-grid-item-card > .card-grid-item-legality.loading,
-.mode-search-images .legality-overlay.legal,
-.mode-search-images .card-grid-item-card > .card-grid-item-legality.legal {
+.mode-search-images-overlay .legality-overlay.loading,
+.mode-search-images-overlay .card-grid-item-card > .card-grid-item-legality.loading,
+.mode-search-images-overlay .legality-overlay.legal,
+.mode-search-images-overlay .card-grid-item-card > .card-grid-item-legality.legal {
     display: none;
 }
 
-.mode-search-images .card-grid-item-card.not-legal > .card-grid-item-card-faces,
-.mode-search-images .card-grid-item-card.banned > .card-grid-item-card-faces {
+.mode-search-images-overlay .card-grid-item-card.not-legal > .card-grid-item-card-faces,
+.mode-search-images-overlay .card-grid-item-card.banned > .card-grid-item-card-faces {
     opacity: 60%;
 }
 

@@ -1,20 +1,22 @@
 const STORAGE_KEY_ENABLED_DECKS = 'enabledDecks';
+const STORAGE_KEY_SEARCH_CHECK_MODE = 'searchCheckMode';
 const STORAGE_KEY_CARD_CACHE = 'cardCache';
 // 7 days aka 1 week (mostly)
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
 
 const CONTENT_MODE_UNKNOWN = 'unknown';
 
-const DECK_MODE_DECKLIST = 'decklist';
-const DECK_MODE_VISUAL = 'visual';
-const DECK_MODE_UNKNOWN = 'unknown';
+const CONTENT_MODE_DECK_LIST = 'decklist';
+const CONTENT_MODE_DECK_VISUAL = 'visual';
 const CONTENT_MODE_SEARCH_IMAGES = 'search_images';
 
 let loadingIndicator,
     disabledButton,
     enabledButton;
 let contentMode = CONTENT_MODE_UNKNOWN;
-let deckWasChecked = false;
+let contentWasChecked = false;
+
+// TODO refactor into interface and 1 implementation per content mode
 
 function getDeckId() {
     let pathElements = location.pathname.split('/');
@@ -50,7 +52,7 @@ async function isCasualChallengeDeck() {
         console.log('isCasualChallengeDeck', 'Deck Title matches');
         // Synchronously store that this deck should have its deck check enabled
         // to prevent unexpected behavior when the deck name changes
-        await storeDeckCheckFlag(true);
+        await storeCheckFlag(true);
         return true;
     }
 
@@ -84,20 +86,31 @@ function initSidebar() {
     });
 }
 
-function initSearchControls() {
+function initSearchControls(searchCheckMode) {
     const searchControlTemplate = document.createElement('template');
     searchControlTemplate.innerHTML = `
     <div class="search-controls-casual-challenge">
          <div class="casual-challenge-checks-loading button-n tiny"><div class="dot-flashing"></div></div>
-<!--         <label for="order">Casual Challenge check</label>-->
          <select id="check" title="Change how cards are checked for Casual Challenge" class="select-n">
-            <option selected="selected" value="disabled">Disabled</option>
-            <option value="overlay">Overlays</option>
-            <option value="filter">Filtered</option>
+            <option ` + (searchCheckMode === 'disabled' ? 'selected="selected" ' : '') + `value="disabled">Disable</option>
+            <option ` + (searchCheckMode === 'overlay' ? 'selected="selected" ' : '') + `value="overlay">Overlay</option>
         </select>
+         <label for="order">checks</label>
     </div>`;
 
     document.querySelector('.search-controls-inner > .search-controls-display-options').after(searchControlTemplate.content);
+
+    let checkModeSelect = document.getElementById('check');
+    checkModeSelect.addEventListener('change', () => {
+        switch (checkModeSelect.value) {
+            case 'disabled':
+                disableChecks();
+                break;
+            case 'overlay':
+                enableChecks('overlay');
+                break;
+        }
+    })
 
     loadingIndicator = document.querySelector('.casual-challenge-checks-loading');
     loadingIndicator.classList.add('hidden');
@@ -107,31 +120,59 @@ function addGlobalClass(cssClass) {
     document.querySelector('#main').classList.add(cssClass);
 }
 
+function removeGlobalClass(cssClass) {
+    document.querySelector('#main').classList.remove(cssClass);
+}
+
 async function init() {
     contentMode = detectContentMode();
 
     switch (contentMode) {
-        case DECK_MODE_DECKLIST:
+        case CONTENT_MODE_DECK_LIST:
             addGlobalClass('mode-deck-list');
             initSidebar();
+
+            if (!await isCasualChallengeDeck()) {
+                displayDisabled();
+                return;
+            }
             break;
-        case DECK_MODE_VISUAL:
+        case CONTENT_MODE_DECK_VISUAL:
             addGlobalClass('mode-deck-visual');
             initSidebar();
+
+            if (!await isCasualChallengeDeck()) {
+                displayDisabled();
+                return;
+            }
             break;
         case CONTENT_MODE_SEARCH_IMAGES:
-            addGlobalClass('mode-search-images');
-            initSearchControls();
+            let searchCheckMode = await chrome.storage.sync.get([STORAGE_KEY_SEARCH_CHECK_MODE]);
+            if (searchCheckMode.hasOwnProperty(STORAGE_KEY_SEARCH_CHECK_MODE)) {
+                searchCheckMode = searchCheckMode[STORAGE_KEY_SEARCH_CHECK_MODE];
+                if (searchCheckMode === false) {
+                    searchCheckMode = 'disabled';
+                }
+            } else {
+                searchCheckMode = 'disabled';
+            }
+
+            initSearchControls(searchCheckMode);
+
+            switch (searchCheckMode) {
+                case 'overlay':
+                    addGlobalClass('mode-search-images-overlay');
+                    break;
+                case 'disabled':
+                    addGlobalClass('mode-search-images-disabled');
+                    displayDisabled();
+                    return;
+            }
             break;
         case CONTENT_MODE_UNKNOWN:
             // Not a supported view --> no legality check
             displayDisabled();
             return;
-    }
-
-    if (!await isCasualChallengeDeck()) {
-        displayDisabled();
-        return;
     }
 
     // Deck title contains 'Casual Challenge' so we can start.
@@ -151,9 +192,9 @@ function detectContentMode() {
 
     if (location.pathname.match(/\/decks\//)) {
         if (document.querySelectorAll('.deck-list').length !== 0) {
-            return DECK_MODE_DECKLIST;
+            return CONTENT_MODE_DECK_LIST;
         } else if (document.querySelectorAll('.card-grid').length !== 0) {
-            return DECK_MODE_VISUAL;
+            return CONTENT_MODE_DECK_VISUAL;
         } else {
             return CONTENT_MODE_UNKNOWN;
         }
@@ -183,21 +224,29 @@ function addLegalityElement(banlist, cardName, cardItem, bannedTemplate, extende
 
 function checkDeck() {
     switch (contentMode) {
-        case DECK_MODE_DECKLIST:
-        case DECK_MODE_VISUAL:
+        case CONTENT_MODE_DECK_LIST:
+        case CONTENT_MODE_DECK_VISUAL:
             document.querySelector('.deck').classList.add('casual-challenge-deck');
             break;
     }
 
-    if (deckWasChecked) {
+    if (contentWasChecked) {
         // Just show our elements
         switch (contentMode) {
-            case DECK_MODE_DECKLIST:
+            case CONTENT_MODE_DECK_LIST:
                 document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
                     element.classList.remove('hidden');
                 });
                 break;
-            case DECK_MODE_VISUAL:
+            case CONTENT_MODE_DECK_VISUAL:
+                document.querySelectorAll('.card-grid-item-card > .legality-overlay, .card-grid-item-card > .card-grid-item-legality')
+                    .forEach(element => {
+                        element.classList.remove('hidden');
+                    });
+                break;
+            case CONTENT_MODE_SEARCH_IMAGES:
+                removeGlobalClass('mode-search-images-disabled');
+                addGlobalClass('mode-search-images-overlay');
                 document.querySelectorAll('.card-grid-item-card > .legality-overlay, .card-grid-item-card > .card-grid-item-legality')
                     .forEach(element => {
                         element.classList.remove('hidden');
@@ -211,11 +260,11 @@ function checkDeck() {
 
     let templateFn;
     switch (contentMode) {
-        case DECK_MODE_DECKLIST: {
+        case CONTENT_MODE_DECK_LIST: {
             templateFn = (cssClass, text, explanation) => `<dl class="card-legality"><dd class="${cssClass}">${text}</dd></dl>`;
             break;
         }
-        case DECK_MODE_VISUAL:
+        case CONTENT_MODE_DECK_VISUAL:
         case CONTENT_MODE_SEARCH_IMAGES:
             templateFn = (cssClass, text, explanation) => `<div class="legality-overlay ${cssClass}"></div>
 <span class="card-grid-item-count card-grid-item-legality ${cssClass}" title="${explanation}">${text}</span>`;
@@ -228,6 +277,7 @@ function checkDeck() {
     const bannedTemplate = document.createElement('template');
     const extendedTemplate = document.createElement('template');
     loadingTemplate.innerHTML = templateFn('loading', '<div class="dot-flashing"></div>', '');
+    // TODO add explanations as tooltips
     legalTemplate.innerHTML = templateFn('legal', 'Legal', '');
     notLegalTemplate.innerHTML = templateFn('not-legal', 'Not Legal', '');
     bannedTemplate.innerHTML = templateFn('banned', 'Banned', '');
@@ -249,7 +299,7 @@ function checkDeck() {
             console.log('Received Casual Challenge ban list: ', banlist);
 
             switch (contentMode) {
-                case DECK_MODE_DECKLIST:
+                case CONTENT_MODE_DECK_LIST:
                     document.querySelectorAll('.deck-list-entry').forEach((deckListEntry) => {
                         let cardName = deckListEntry.querySelector('.deck-list-entry-name').innerText.trim();
                         addLegalityElement(
@@ -264,7 +314,7 @@ function checkDeck() {
                         );
                     });
                     break;
-                case DECK_MODE_VISUAL:
+                case CONTENT_MODE_DECK_VISUAL:
                 case CONTENT_MODE_SEARCH_IMAGES:
                     document.querySelectorAll('.card-grid-item').forEach((deckListEntry) => {
                         if (deckListEntry.classList.contains('flexbox-spacer')) {
@@ -299,7 +349,7 @@ function checkDeck() {
                         const deckListEntry = cardsToLoad[cardId];
                         let appendToDeckListEntry;
                         switch (contentMode) {
-                            case DECK_MODE_DECKLIST:
+                            case CONTENT_MODE_DECK_LIST:
                                 appendToDeckListEntry = (deckListEntry) => {
                                     deckListEntry.querySelector('.card-legality').remove();
                                     deckListEntry.classList.remove('loading');
@@ -313,7 +363,7 @@ function checkDeck() {
                                     }
                                 };
                                 break;
-                            case DECK_MODE_VISUAL:
+                            case CONTENT_MODE_DECK_VISUAL:
                             case CONTENT_MODE_SEARCH_IMAGES:
                                 appendToDeckListEntry = (deckListEntry) => {
                                     deckListEntry.querySelector('.legality-overlay').remove();
@@ -341,7 +391,7 @@ function checkDeck() {
         })
         .then(() => {
             displayEnabled();
-            deckWasChecked = true;
+            contentWasChecked = true;
         });
 }
 
@@ -349,6 +399,8 @@ function loadCardsThroughCache(cardIdsToLoad) {
     const loadedCards = [];
     const remainingIds = [];
     let cardCache;
+    // Keep a reference in case we need to clear the cache
+    let apiLoadedCards;
 
     return chrome.storage.local
         .get(STORAGE_KEY_CARD_CACHE)
@@ -413,15 +465,37 @@ function loadCardsThroughCache(cardIdsToLoad) {
                         cardCache[cardObject.id] = cardObject;
                     });
 
+                    apiLoadedCards = fromApi;
+
                     return loadedCards.concat(fromApi);
                 });
         })
         .then(loadedCards => {
-            console.log('Store cache', cardCache);
             // Store modified cache object
             return chrome.storage.local.set({[STORAGE_KEY_CARD_CACHE]: cardCache})
                 // Pass loadedCards outside
-                .then(() => loadedCards);
+                .then(() => {
+                    return loadedCards
+                })
+                .catch((error) => {
+                    if (error.toString() === 'Error: QUOTA_BYTES quota exceeded') {
+                        console.log('Cleaning out old cards from cache.')
+                        // Cache got too big --> delete it, and just store the newest batch of cards
+                        return chrome.storage.local.remove(STORAGE_KEY_CARD_CACHE)
+                            .then(() => {
+                                cardCache = {};
+                                apiLoadedCards.forEach(cardObject => {
+                                    cardCache[cardObject.id] = cardObject;
+                                });
+
+                                return chrome.storage.local.set({[STORAGE_KEY_CARD_CACHE]: cardCache})
+                            })
+                            .then(() => {
+                                return loadedCards;
+                            })
+                    }
+                    console.error('Unknown error while writing card cache', error);
+                });
         });
 }
 
@@ -464,26 +538,43 @@ function displayDisabled() {
     enabledButton.classList.add('hidden');
 }
 
-function storeDeckCheckFlag(isEnabled) {
-    return chrome.storage.sync
-        .get(STORAGE_KEY_ENABLED_DECKS)
-        .then(enabledDecks => {
-            if (enabledDecks.hasOwnProperty(STORAGE_KEY_ENABLED_DECKS)) {
-                enabledDecks = enabledDecks[STORAGE_KEY_ENABLED_DECKS];
-            }
-            enabledDecks[getDeckId()] = isEnabled;
+function storeCheckFlag(newValue) {
+    switch (contentMode) {
+        case CONTENT_MODE_DECK_LIST:
+        case CONTENT_MODE_DECK_VISUAL:
+            return chrome.storage.sync
+                .get(STORAGE_KEY_ENABLED_DECKS)
+                .then(enabledDecks => {
+                    if (enabledDecks.hasOwnProperty(STORAGE_KEY_ENABLED_DECKS)) {
+                        enabledDecks = enabledDecks[STORAGE_KEY_ENABLED_DECKS];
+                    }
+                    enabledDecks[getDeckId()] = newValue;
 
+                    return chrome.storage.sync.set(
+                        {[STORAGE_KEY_ENABLED_DECKS]: enabledDecks},
+                    );
+                });
+        case CONTENT_MODE_SEARCH_IMAGES:
             return chrome.storage.sync.set(
-                {[STORAGE_KEY_ENABLED_DECKS]: enabledDecks},
+                {[STORAGE_KEY_SEARCH_CHECK_MODE]: newValue},
             );
-        });
+        default:
+            // Not a deck --> nothing to do
+            return Promise.resolve();
+    }
+
+
 }
 
-function enableChecks() {
+function enableChecks(mode) {
+    if (typeof mode === 'undefined') {
+        mode = true;
+    }
+
     displayLoading();
-    storeDeckCheckFlag(true)
+    storeCheckFlag(mode)
         .then(() => {
-            if (contentMode === DECK_MODE_DECKLIST &&
+            if (contentMode === CONTENT_MODE_DECK_LIST &&
                 document.getElementById('with').value !== 'eur') { // showing euros?
                 // ... otherwise: switch to correct view
                 let queryParameters = new URLSearchParams(location.search);
@@ -497,23 +588,36 @@ function enableChecks() {
 
 function disableChecks() {
     displayLoading();
-    storeDeckCheckFlag(false)
+    storeCheckFlag(false)
         .then(() => {
-            if (deckWasChecked) {
+            if (contentWasChecked) {
                 // Hide everything we added
-                document.querySelector('.deck').classList.remove('casual-challenge-deck');
+                let elementsToHideSelector = null;
                 switch (contentMode) {
-                    case DECK_MODE_DECKLIST:
-                        document.querySelectorAll('.deck-list-entry > .card-legality').forEach(element => {
-                            element.classList.add('hidden');
-                        });
+                    case CONTENT_MODE_DECK_LIST:
+                        document.querySelector('.deck').classList.remove('casual-challenge-deck');
+                        elementsToHideSelector = '.deck-list-entry > .card-legality';
                         break;
-                    case DECK_MODE_VISUAL:
-                        document.querySelectorAll('.card-grid-item-card > .legality-overlay, .card-grid-item-card > .card-grid-item-legality')
-                            .forEach(element => {
-                                element.classList.add('hidden');
-                            });
+                    case CONTENT_MODE_DECK_VISUAL:
+                        document.querySelector('.deck').classList.remove('casual-challenge-deck');
+                        elementsToHideSelector =
+                            `.card-grid-item-card > .legality-overlay,
+                            .card-grid-item-card > .card-grid-item-legality`;
                         break;
+                    // Intended Fallthrough
+                    case CONTENT_MODE_SEARCH_IMAGES:
+                        removeGlobalClass('mode-search-images-overlay');
+                        addGlobalClass('mode-search-images-disabled');
+                        elementsToHideSelector =
+                            `.card-grid-item-card > .legality-overlay,
+                            .card-grid-item-card > .card-grid-item-legality`;
+                        break;
+                }
+
+                if (elementsToHideSelector !== null) {
+                    document.querySelectorAll(elementsToHideSelector).forEach(element => {
+                        element.classList.add('hidden');
+                    });
                 }
             }
 

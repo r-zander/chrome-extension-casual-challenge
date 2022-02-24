@@ -7,7 +7,6 @@ function init() {
             if (chrome.runtime.lastError) {
                 console.error('Error while fetching ban status.', chrome.runtime.lastError);
                 return;
-                // throw chrome.runtime.lastError;
             }
 
             displayLegality(banStatus);
