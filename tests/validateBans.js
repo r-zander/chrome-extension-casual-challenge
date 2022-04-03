@@ -1,5 +1,5 @@
 function validateBanList() {
-    chrome.runtime.sendMessage({action: 'get/banlist'}, (banlist) => {
+    chrome.runtime.sendMessage({action: 'get/ban/list'}, (banlist) => {
         if (chrome.runtime.lastError) {
             reject(chrome.runtime.lastError);
             return;

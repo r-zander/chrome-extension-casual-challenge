@@ -26,6 +26,7 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 - [ ] add explanation of supported views in Extension description
 - [x] Bug: If a card appears more than once, only the last instance is correctly loaded
 - [x] Auto clear card cache if running out of local storage
+- [ ] Move "extended" into settings
 
 ## Additional Features
 
@@ -35,14 +36,30 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 - [ ] Have options that allow to set what deck names are considered "Casual Challenge"
 - [ ] **OPTIONAL** Clear cache button
 - [ ] In-page tutorial for new users and each view
+- [ ] Update banner der erklärt, was sich geändert hat
+
+## Deployment
+
+- Create zip from everything but
+  ```
+  .git/
+  .idea/
+  publishing/
+  tests/
+  .gitignore
+  chrome-extension-casual-challenge.iml
+  README.md
+  ```
 
 ## Credits
 
-Icon: [Donkey icon](https://game-icons.net/1x1/skoll/donkey.html) by [Skoll](https://game-icons.net/) under [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/)  
+Icon: [Donkey icon](https://game-icons.net/1x1/skoll/donkey.html) by [Skoll](https://game-icons.net/)
+under [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/)  
 Recolored in #F5C823
 
 ### Disclaimer
 
-Portions of "Scryfall - Casual Challenge Checker" are unofficial Fan Content permitted under the Wizards of the Coast Fan Content Policy. The information 
-presented on this extension about Magic: The Gathering, both literal and graphical, is copyrighted by Wizards of the Coast.
+Portions of "Scryfall - Casual Challenge Checker" are unofficial Fan Content permitted under the Wizards of the Coast
+Fan Content Policy. The information presented on this extension about Magic: The Gathering, both literal and graphical,
+is copyrighted by Wizards of the Coast.
 This extension is not produced, endorsed, supported, or affiliated with Wizards of the Coast.

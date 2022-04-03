@@ -2,7 +2,7 @@ function init() {
     const cardName = document.querySelector('.card-text-card-name').innerText.trim();
 
     chrome.runtime.sendMessage(
-        {action: 'get/ban-status', cardName: cardName},
+        {action: 'get/ban/card', cardName: cardName},
         (banStatus) => {
             if (chrome.runtime.lastError) {
                 console.error('Error while fetching ban status.', chrome.runtime.lastError);
@@ -14,17 +14,17 @@ function init() {
 }
 
 function displayLegality(banStatus) {
-    switch (banStatus) {
+    switch (banStatus.banStatus) {
         case 'banned':
             appendLegalityElement('banned', 'Banned',
-                'One of the top 50 cards in a paper tournament format.');
+                'Played in ' + formatsToString(banStatus.formats) + ' competitive decks');
             return;
         case 'extended':
             appendLegalityElement('extended', 'Extended',
-                'One of the top 200 cards in a paper tournament format.');
+                'Played in ' + formatsToString(banStatus.formats) + ' competitive decks');
             return;
         default:
-            // Fallthrough - needs a more complicated handling outside of the switch
+        // Fallthrough - needs a more complicated handling outside of the switch
     }
 
     let vintageLegality;
@@ -41,6 +41,18 @@ function displayLegality(banStatus) {
         appendLegalityElement('not-legal', 'Not Legal',
             'This card is not fully legal in Vintage.');
     }
+}
+
+function formatsToString(formats) {
+    let result = '';
+    for (const [format, deckPercentage] of Object.entries(formats)) {
+        if (result.length > 0) {
+            result += ', '
+        }
+        result += (deckPercentage * 100).toFixed(0) + '% of ' + format
+    }
+
+    return result;
 }
 
 function appendLegalityElement(cssClass, text, explanation) {

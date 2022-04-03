@@ -224,3 +224,20 @@
  * End of Dot Flashing
  * ==============================================
  */
+
+.message {
+    background-color: #3497BE;
+    border-radius: 3px;
+}
+
+.flash-message {
+    width: 100%;
+    padding: 12px 3%;
+    position: relative;
+    cursor: pointer;
+    -webkit-box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 1px 0px rgb(0 0 0 / 6%);
+    z-index: 1000;
+    margin: 0 0 -1px 0;
+    background-color: #3497BE;
+}
