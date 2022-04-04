@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Scryfall - Casual Challenge Checker",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a custom MtG format created by XieLong and Janosch.exe",
   "icons": {
     "16": "/images/icon_16.png",

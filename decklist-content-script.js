@@ -529,9 +529,9 @@ function displayDisabled() {
             return;
     }
 
-    loadingIndicator.classList.add('hidden');
-    disabledButton.classList.remove('hidden');
-    enabledButton.classList.add('hidden');
+    if (typeof loadingIndicator !== 'undefined') loadingIndicator.classList.add('hidden');
+    if (typeof disabledButton !== 'undefined') disabledButton.classList.remove('hidden');
+    if (typeof enabledButton !== 'undefined') enabledButton.classList.add('hidden');
 }
 
 function storeCheckFlag(newValue) {

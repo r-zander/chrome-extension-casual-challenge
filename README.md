@@ -23,10 +23,21 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
     - [ ] hide everything not legal in casual challenge, and extended with border+hover
   - [ ] Set view https://scryfall.com/sets/vma?as=grid&order=set
   - [ ] Inject button in ALL search controls
-- [ ] add explanation of supported views in Extension description
 - [x] Bug: If a card appears more than once, only the last instance is correctly loaded
 - [x] Auto clear card cache if running out of local storage
 - [ ] Move "extended" into settings
+- [ ] Auto-fix card prices
+- [ ] Sort by price (in Deck view)
+- [ ] Always navigate to '?with=eur"
+  - [ ] on `/build` --> \[Done Editing]
+  - [ ] on deck view --> \[Decklist]
+  - [ ] in `deck-tray`
+  - [ ] in https://scryfall.com/<user>/decks/
+- [ ] Overall legality section (like in spreadsheet)
+  - [ ] include price check
+  - [ ] Remove Est. USD, Est. TIX, Wildcards
+- [ ] Set basic lands to 0€
+- [ ] Support chrome/firefox mobile
 
 ## Additional Features
 
@@ -37,6 +48,12 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 - [ ] **OPTIONAL** Clear cache button
 - [ ] In-page tutorial for new users and each view
 - [ ] Update banner der erklärt, was sich geändert hat
+  - evtl in `#notification-tray`
+- [ ] add explanation of supported views in Extension description
+
+## Known Bugs
+
+- [ ] "Delver of Secrets // Insectile Aberration" isn't shown as banned in search view even tho it is
 
 ## Deployment
 
