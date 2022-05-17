@@ -25,6 +25,10 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
   - [ ] Inject button in ALL search controls
 - [x] Bug: If a card appears more than once, only the last instance is correctly loaded
 - [x] Auto clear card cache if running out of local storage
+- [ ] Bug: Extended is checked before anything else and can thus override not-legal or banned (which are lazy-loaded
+  information)
+  - For not-legal this is solved right now by having the 50 cards that are concerned on a special list, but this is far
+    from ideal
 - [ ] Move "extended" into settings
 - [ ] Auto-fix card prices
 - [ ] Sort by price (in Deck view)
@@ -42,7 +46,7 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 ## Additional Features
 
 - [x] Switch display to `?with=eur&as=list`
-- [ ] Show tooltip to display why something is not legal
+- [x] Show tooltip to display why something is not legal
 - [ ] Fix printings to cheapest print
 - [ ] Have options that allow to set what deck names are considered "Casual Challenge"
 - [ ] **OPTIONAL** Clear cache button
@@ -50,10 +54,18 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 - [ ] Update banner der erklärt, was sich geändert hat
   - evtl in `#notification-tray`
 - [ ] add explanation of supported views in Extension description
+- [ ] Random enhancement:
+  - `document.querySelector('a[href="/random"]').href = '/random?q=' + encodeURIComponent(document.getElementById('q').value + ' lang:en')`
+
+  1. On Start Page:
+    1. Random Card --> searches for entered query
+    2. New button "Casual Challenge inspiration" with saved query `(rarity:r OR rarity:m) eur>=2 eur<=5 lang:en`
+  2. On Advanced Search page
+    1. New Button "Random card with these options"
 
 ## Known Bugs
 
-- [ ] "Delver of Secrets // Insectile Aberration" isn't shown as banned in search view even tho it is
+- [x] "Delver of Secrets // Insectile Aberration" isn't shown as banned in search view even tho it is
 
 ## Deployment
 

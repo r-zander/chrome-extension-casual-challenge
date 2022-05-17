@@ -14,33 +14,55 @@ function init() {
 }
 
 function displayLegality(banStatus) {
-    switch (banStatus.banStatus) {
-        case 'banned':
-            appendLegalityElement('banned', 'Banned',
-                'Played in ' + formatsToString(banStatus.formats) + ' competitive decks');
-            return;
-        case 'extended':
-            appendLegalityElement('extended', 'Extended',
-                'Played in ' + formatsToString(banStatus.formats) + ' competitive decks');
-            return;
-        default:
-        // Fallthrough - needs a more complicated handling outside of the switch
-    }
-
+    let legalities = {};
     let vintageLegality;
     document.querySelectorAll('.card-legality-item > dt').forEach(formatElement => {
         if (formatElement.innerText.trim() === 'Vintage') {
             vintageLegality = formatElement.nextElementSibling.classList.item(0);
         }
+
+        legalities[formatElement.innerText.trim()] = formatElement.nextElementSibling.classList.item(0);
     });
 
-    if (vintageLegality === 'legal') {
-        appendLegalityElement('legal', 'Legal',
-            'There are no bans and the card is legal in Vintage.');
-    } else {
+    if (legalities['Vintage'] !== 'legal') {
         appendLegalityElement('not-legal', 'Not Legal',
             'This card is not fully legal in Vintage.');
+    } else if (banStatus.banStatus === 'banned') {
+        appendLegalityElement('banned', 'Banned',
+            'Played in ' + formatsToString(banStatus.formats) + ' competitive decks');
+    } else {
+        const bannedInFormats = bannedFormats(legalities);
+        if (bannedInFormats.length > 0) {
+            const now = new Date();
+            if (now >= new Date(2022, 5, 1)) {
+                appendLegalityElement('banned', 'Banned',
+                    'Banned in ' + bannedInFormats.join(', ') + '');
+            } else {
+                appendLegalityElement('future-banned', 'Future Banned',
+                    'From 01. June it will be banned, because it\'s banned in ' + bannedInFormats.join(', ') + '');
+            }
+        } else if (banStatus.banStatus === 'extended') {
+            appendLegalityElement('extended', 'Extended',
+                'Played in ' + formatsToString(banStatus.formats) + ' competitive decks');
+        } else {
+            appendLegalityElement('legal', 'Legal',
+                'There are no bans and the card is legal in Vintage.');
+        }
     }
+}
+
+/**
+ * Only looks at Casual Challenge relevant formats.
+ */
+function bannedFormats(legalities) {
+    let bannedInFormats = [];
+    ['Standard', 'Pioneer', 'Modern', 'Legacy', 'Vintage', 'Pauper'].forEach(format => {
+        if (legalities[format] === 'banned') {
+            bannedInFormats.push(format);
+        }
+    });
+
+    return bannedInFormats;
 }
 
 function formatsToString(formats) {

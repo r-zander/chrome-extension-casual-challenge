@@ -202,22 +202,41 @@ function detectContentMode() {
     return CONTENT_MODE_UNKNOWN;
 }
 
+function cardNameContainedInList(indexedList, cardName) {
+    if (indexedList.hasOwnProperty(cardName)) {
+        return true;
+    }
+
+    cardName = cardName.split('//')[0].trim();
+    return indexedList.hasOwnProperty(cardName);
+}
+
+function isBanned(banList, cardName) {
+    return cardNameContainedInList(banList.bans, cardName);
+}
+
+function isExtendedBanned(banList, cardName) {
+    return cardNameContainedInList(banList.extended, cardName);
+}
+
 function addLegalityElement(banList, cardName, cardItem, bannedTemplate, extendedTemplate, loadingTemplate, cardsToLoad, deckListEntry) {
-    if (banList.bans.hasOwnProperty(cardName)) {
+    if (isBanned(banList, cardName)) {
         cardItem.append(bannedTemplate.content.cloneNode(true));
         cardItem.classList.add('banned');
-    } else if (banList.extended.hasOwnProperty(cardName)) {
+    } else if (isExtendedBanned(banList, cardName)) {
         cardItem.append(extendedTemplate.content.cloneNode(true));
         cardItem.classList.add('extended');
     } else {
         // We need some more infos about the card, so lets queue it for loading
         cardItem.append(loadingTemplate.content.cloneNode(true));
         cardItem.classList.add('loading');
-        if (cardsToLoad.hasOwnProperty(deckListEntry.dataset.cardId)) {
-            cardsToLoad[deckListEntry.dataset.cardId] = [cardsToLoad[deckListEntry.dataset.cardId], deckListEntry];
-        } else {
-            cardsToLoad[deckListEntry.dataset.cardId] = deckListEntry;
-        }
+    }
+
+    // Load every card --> make sure that not-legal and (implicitly) banned are correctly shown
+    if (cardsToLoad.hasOwnProperty(deckListEntry.dataset.cardId)) {
+        cardsToLoad[deckListEntry.dataset.cardId].push(deckListEntry);
+    } else {
+        cardsToLoad[deckListEntry.dataset.cardId] = [deckListEntry];
     }
 }
 
@@ -260,7 +279,8 @@ function checkDeck() {
     let templateFn;
     switch (contentMode) {
         case CONTENT_MODE_DECK_LIST: {
-            templateFn = (cssClass, text) => `<dl class="card-legality"><dd class="${cssClass}">${text}</dd></dl>`;
+            templateFn = (cssClass, text) => `<dl class="card-legality">
+<dd class="${cssClass}" title="${text}">${text}</dd></dl>`;
             break;
         }
         case CONTENT_MODE_DECK_VISUAL:
@@ -275,11 +295,21 @@ function checkDeck() {
     const notLegalTemplate = document.createElement('template');
     const bannedTemplate = document.createElement('template');
     const extendedTemplate = document.createElement('template');
+    const futureBannedTemplate = document.createElement('template');
     loadingTemplate.innerHTML = templateFn('loading', '<div class="dot-flashing"></div>');
     legalTemplate.innerHTML = templateFn('legal', 'Legal');
     notLegalTemplate.innerHTML = templateFn('not-legal', 'Not Legal');
     bannedTemplate.innerHTML = templateFn('banned', 'Banned');
     extendedTemplate.innerHTML = templateFn('extended', 'Extended');
+    const now = new Date();
+    let futureBannedClass;
+    if (now >= new Date(2022, 5, 1)) { // Rule change effective from 01. June 2022 onwards
+        futureBannedTemplate.innerHTML = templateFn('banned', 'Banned');
+        futureBannedClass = 'banned';
+    } else {
+        futureBannedTemplate.innerHTML = templateFn('future-banned', 'Future Banned (From 01. June)');
+        futureBannedClass = 'future-banned';
+    }
 
     let cardsToLoad = {};
 
@@ -347,41 +377,38 @@ function checkDeck() {
                     let appendToDeckListEntry;
                     switch (contentMode) {
                         case CONTENT_MODE_DECK_LIST:
-                            appendToDeckListEntry = (deckListEntry) => {
-                                deckListEntry.querySelector('.card-legality').remove();
-                                deckListEntry.classList.remove('loading');
-
-                                if (cardObject.legalities.vintage === 'legal') {
-                                    deckListEntry.append(legalTemplate.content.cloneNode(true));
-                                    deckListEntry.classList.add('legal');
-                                } else {
-                                    deckListEntry.append(notLegalTemplate.content.cloneNode(true));
-                                    deckListEntry.classList.add('not-legal');
-                                }
-                            };
+                            appendToDeckListEntry = appendToDeckListEntryRow;
                             break;
                         case CONTENT_MODE_DECK_VISUAL:
                         case CONTENT_MODE_SEARCH_IMAGES:
-                            appendToDeckListEntry = (deckListEntry) => {
-                                deckListEntry.querySelector('.legality-overlay').remove();
-                                deckListEntry.querySelector('.card-grid-item-legality').remove();
-                                const cardItem = deckListEntry.querySelector('.card-grid-item-card');
-                                cardItem.classList.remove('loading');
-                                if (cardObject.legalities.vintage === 'legal') {
-                                    cardItem.append(legalTemplate.content.cloneNode(true));
-                                    cardItem.classList.add('legal');
-                                } else {
-                                    cardItem.append(notLegalTemplate.content.cloneNode(true));
-                                    cardItem.classList.add('not-legal');
-                                }
-                            };
+                            appendToDeckListEntry = appendToDeckListEntryImage;
                             break;
                     }
 
                     if (Array.isArray(deckListEntry)) {
-                        deckListEntry.forEach(appendToDeckListEntry);
+                        deckListEntry.forEach((entry) => {
+                            appendToDeckListEntry(
+                                entry,
+                                cardObject,
+                                legalTemplate,
+                                futureBannedTemplate,
+                                futureBannedClass,
+                                notLegalTemplate,
+                                banList,
+                                bannedTemplate,
+                                extendedTemplate);
+                        });
                     } else {
-                        appendToDeckListEntry(deckListEntry);
+                        appendToDeckListEntry(
+                            deckListEntry,
+                            cardObject,
+                            legalTemplate,
+                            futureBannedTemplate,
+                            futureBannedClass,
+                            notLegalTemplate,
+                            banList,
+                            bannedTemplate,
+                            extendedTemplate);
                     }
                 });
             });
@@ -390,6 +417,57 @@ function checkDeck() {
             displayEnabled();
             contentWasChecked = true;
         });
+}
+
+function appendToDeckListEntryImage(deckListEntry, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
+                                    notLegalTemplate, banList, bannedTemplate, extendedTemplate) {
+    deckListEntry.querySelector('.legality-overlay').remove();
+    deckListEntry.querySelector('.card-grid-item-legality').remove();
+    const cardItem = deckListEntry.querySelector('.card-grid-item-card');
+    modifyCardItem(cardItem, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
+        notLegalTemplate, banList, bannedTemplate, extendedTemplate);
+}
+
+function appendToDeckListEntryRow(deckListEntry, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
+                                  notLegalTemplate, banList, bannedTemplate, extendedTemplate) {
+    deckListEntry.querySelector('.card-legality').remove();
+    modifyCardItem(deckListEntry, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
+        notLegalTemplate, banList, bannedTemplate, extendedTemplate)
+}
+
+function modifyCardItem(cardItem, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
+                        notLegalTemplate, banList, bannedTemplate, extendedTemplate) {
+    cardItem.classList.remove('loading');
+
+    if (cardObject.legalities.vintage !== 'legal') {
+        cardItem.append(notLegalTemplate.content.cloneNode(true));
+        cardItem.classList.add('not-legal');
+    } else if (isBanned(banList, cardObject.name)) {
+        cardItem.append(bannedTemplate.content.cloneNode(true));
+        cardItem.classList.add('banned');
+    } else if (isBannedInAnyFormat(cardObject)) {
+        cardItem.append(futureBannedTemplate.content.cloneNode(true));
+        cardItem.classList.add(futureBannedClass);
+    } else if (isExtendedBanned(banList, cardObject.name)) {
+        cardItem.append(extendedTemplate.content.cloneNode(true));
+        cardItem.classList.add('extended');
+    } else {
+        cardItem.append(legalTemplate.content.cloneNode(true));
+        cardItem.classList.add('legal');
+    }
+}
+
+/**
+ * Only looks at Casual Challenge relevant formats.
+ */
+function isBannedInAnyFormat(cardObject) {
+    const legalities = cardObject.legalities;
+    return legalities.standard === 'banned' ||
+        legalities.pioneer === 'banned' ||
+        legalities.modern === 'banned' ||
+        legalities.legacy === 'banned' ||
+        legalities.vintage === 'banned' ||
+        legalities.pauper === 'banned';
 }
 
 function loadCardsThroughCache(cardIdsToLoad) {

@@ -56,6 +56,10 @@
     background-color: #EFC20E;
 }
 
+.card-legality > dd.future-banned {
+    background-color: #D79167;
+}
+
 /* Reduce price width a bit - in casual prices should be pretty low anyways */
 .casual-challenge-deck .deck-list-entry-axial-data {
     min-width: 2.75em !important;
@@ -101,6 +105,10 @@
     border-color: #CF8184;
 }
 
+.legality-overlay.future-banned {
+    border-color: #D79167;
+}
+
 .legality-overlay.restriced {
     border-color: #84A7B7;
 }
@@ -141,6 +149,10 @@
 
 .card-grid-item-legality.banned {
     background-color: #CF8184;
+}
+
+.card-grid-item-legality.future-banned {
+    background-color: #D79167;
 }
 
 .card-grid-item-legality.restriced {
@@ -236,7 +248,7 @@
     position: relative;
     cursor: pointer;
     -webkit-box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.06);
-    box-shadow: 0 1px 1px 0px rgb(0 0 0 / 6%);
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.06);
     z-index: 1000;
     margin: 0 0 -1px 0;
     background-color: #3497BE;
