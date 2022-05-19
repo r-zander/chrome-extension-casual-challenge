@@ -25,18 +25,14 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
   - [ ] Inject button in ALL search controls
 - [x] Bug: If a card appears more than once, only the last instance is correctly loaded
 - [x] Auto clear card cache if running out of local storage
-- [ ] Bug: Extended is checked before anything else and can thus override not-legal or banned (which are lazy-loaded
+- [x] Bug: Extended is checked before anything else and can thus override not-legal or banned (which are lazy-loaded
   information)
   - For not-legal this is solved right now by having the 50 cards that are concerned on a special list, but this is far
     from ideal
 - [ ] Move "extended" into settings
 - [ ] Auto-fix card prices
 - [ ] Sort by price (in Deck view)
-- [ ] Always navigate to '?with=eur"
-  - [ ] on `/build` --> \[Done Editing]
-  - [ ] on deck view --> \[Decklist]
-  - [ ] in `deck-tray`
-  - [ ] in https://scryfall.com/<user>/decks/
+- [x] Always navigate to '?with=eur"
 - [ ] Overall legality section (like in spreadsheet)
   - [ ] include price check
   - [ ] Remove Est. USD, Est. TIX, Wildcards
