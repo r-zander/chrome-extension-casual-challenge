@@ -1,6 +1,10 @@
-const STORAGE_KEY_ENABLED_DECKS = 'enabledDecks';
-const STORAGE_KEY_SEARCH_CHECK_MODE = 'searchCheckMode';
-const STORAGE_KEY_CARD_CACHE = 'cardCache';
+import '../../../styles/decklist-content.css';
+import {BanListResponse, Bans, Card, ScryfallUUID} from "../../common/types";
+import {localStorage, StorageKeys, syncStorage} from "../../common/storage";
+import {deserialize} from "../../common/serialization";
+import {SerializableMap} from "../../common/SerializableMap";
+
+
 // 7 days aka 1 week (mostly)
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
 
@@ -10,16 +14,20 @@ const CONTENT_MODE_DECK_LIST = 'decklist';
 const CONTENT_MODE_DECK_VISUAL = 'visual';
 const CONTENT_MODE_SEARCH_IMAGES = 'search_images';
 
-let loadingIndicator,
-    disabledButton,
-    enabledButton;
+let loadingIndicator: HTMLElement,
+    disabledButton: HTMLElement,
+    enabledButton: HTMLElement;
 let contentMode = CONTENT_MODE_UNKNOWN;
 let contentWasChecked = false;
+
+type CheckMode = ('disabled' | 'overlay');
+
+type LoadableCards = Map<ScryfallUUID, HTMLElement[]>;
 
 // TODO refactor into interface and 1 implementation per content mode
 
 function getDeckId() {
-    let pathElements = location.pathname.split('/');
+    const pathElements = location.pathname.split('/');
     return pathElements[pathElements.length - 1];
 }
 
@@ -29,35 +37,33 @@ async function isCasualChallengeDeck() {
             return true;
     }
 
-    let enabledDecks = await chrome.storage.sync.get([STORAGE_KEY_ENABLED_DECKS]);
-    if (enabledDecks.hasOwnProperty(STORAGE_KEY_ENABLED_DECKS)) {
-        enabledDecks = enabledDecks[STORAGE_KEY_ENABLED_DECKS];
-    }
-    /*
-     * Triple state
-     * true = deck was white listed
-     * false = deck was black listed
-     * undefined = deck is unknown
-     */
-    const enabled = enabledDecks[getDeckId()];
+    const enabledDecks = await syncStorage.get<Map<string, CheckMode>>(StorageKeys.ENABLED_DECKS);
+    console.log(enabledDecks);
+
     // Deck was explicitly disabled for deck check
-    if (enabled === false) {
+    if (enabledDecks !== null && (enabledDecks.get(getDeckId()) === 'disabled')) {
         console.log('isCasualChallengeDeck', 'Deck is disabled according to `enabledDecks` storage');
         return false;
     }
 
     // Check for matching deck titles for auto-enable
-    let deckTitle = document.querySelector('.deck-details-title').innerText;
-    if (deckTitle.match(/Casual.{0,3}Challenge/i) !== null) {
+    const deckTitle = (document.querySelector('.deck-details-title') as HTMLElement).innerText;
+    if (deckTitle.match(/Casual.{0,3}Challenge/i) !== null ||
+        deckTitle.includes('CC') !== null /* Case-sensitive */) {
         console.log('isCasualChallengeDeck', 'Deck Title matches');
         // Synchronously store that this deck should have its deck check enabled
         // to prevent unexpected behavior when the deck name changes
-        await storeCheckFlag(true);
+        await storeCheckFlag('overlay');
         return true;
     }
 
-    console.log('isCasualChallengeDeck', 'Found deck id in `enabledDecks` storage');
-    return (enabled === true);
+    if (enabledDecks === null) {
+        console.log('isCasualChallengeDeck', 'Unknown deck, just proceed without checks.');
+        return false;
+    } else {
+        console.log('isCasualChallengeDeck', 'Found deck id in `enabledDecks` storage');
+        return true;
+    }
 }
 
 function initSidebar() {
@@ -85,7 +91,7 @@ function initSidebar() {
     });
 }
 
-function initSearchControls(searchCheckMode) {
+function initSearchControls(searchCheckMode: CheckMode) {
     const searchControlTemplate = document.createElement('template');
     searchControlTemplate.innerHTML = `
     <div class="search-controls-casual-challenge">
@@ -99,14 +105,14 @@ function initSearchControls(searchCheckMode) {
 
     document.querySelector('.search-controls-inner > .search-controls-display-options').after(searchControlTemplate.content);
 
-    let checkModeSelect = document.getElementById('check');
+    const checkModeSelect = document.getElementById('check') as HTMLInputElement;
     checkModeSelect.addEventListener('change', () => {
         switch (checkModeSelect.value) {
             case 'disabled':
                 disableChecks();
                 break;
             case 'overlay':
-                enableChecks('overlay');
+                enableChecks();
                 break;
         }
     })
@@ -115,11 +121,11 @@ function initSearchControls(searchCheckMode) {
     loadingIndicator.classList.add('hidden');
 }
 
-function addGlobalClass(cssClass) {
+function addGlobalClass(cssClass: string) {
     document.querySelector('#main').classList.add(cssClass);
 }
 
-function removeGlobalClass(cssClass) {
+function removeGlobalClass(cssClass: string) {
     document.querySelector('#main').classList.remove(cssClass);
 }
 
@@ -145,16 +151,8 @@ async function init() {
                 return;
             }
             break;
-        case CONTENT_MODE_SEARCH_IMAGES:
-            let searchCheckMode = await chrome.storage.sync.get([STORAGE_KEY_SEARCH_CHECK_MODE]);
-            if (searchCheckMode.hasOwnProperty(STORAGE_KEY_SEARCH_CHECK_MODE)) {
-                searchCheckMode = searchCheckMode[STORAGE_KEY_SEARCH_CHECK_MODE];
-                if (searchCheckMode === false) {
-                    searchCheckMode = 'disabled';
-                }
-            } else {
-                searchCheckMode = 'disabled';
-            }
+        case CONTENT_MODE_SEARCH_IMAGES: {
+            const searchCheckMode = await syncStorage.get<CheckMode>(StorageKeys.SEARCH_CHECK_MODE, 'disabled');
 
             initSearchControls(searchCheckMode);
 
@@ -168,6 +166,7 @@ async function init() {
                     return;
             }
             break;
+        }
         case CONTENT_MODE_UNKNOWN:
             // Not a supported view --> no legality check
             displayDisabled();
@@ -180,10 +179,12 @@ async function init() {
 
 function detectContentMode() {
     if (location.pathname === '/search') {
-        const modeSelector = document.getElementById('as');
-        switch (modeSelector.value) {
-            case 'grid':
-                return CONTENT_MODE_SEARCH_IMAGES;
+        const modeSelector = document.querySelector('select#as') as HTMLInputElement;
+        if (modeSelector !== null) {
+            switch (modeSelector.value) {
+                case 'grid':
+                    return CONTENT_MODE_SEARCH_IMAGES;
+            }
         }
 
         return CONTENT_MODE_UNKNOWN;
@@ -202,24 +203,34 @@ function detectContentMode() {
     return CONTENT_MODE_UNKNOWN;
 }
 
-function cardNameContainedInList(indexedList, cardName) {
-    if (indexedList.hasOwnProperty(cardName)) {
+function cardNameContainedInList(indexedList: Bans, cardName: string) {
+    // console.log('indexedList', indexedList);
+    if (indexedList.has(cardName)) {
         return true;
     }
 
     cardName = cardName.split('//')[0].trim();
-    return indexedList.hasOwnProperty(cardName);
+    return indexedList.has(cardName);
 }
 
-function isBanned(banList, cardName) {
+function isBanned(banList: BanListResponse, cardName: string) {
     return cardNameContainedInList(banList.bans, cardName);
 }
 
-function isExtendedBanned(banList, cardName) {
+function isExtendedBanned(banList: BanListResponse, cardName: string) {
     return cardNameContainedInList(banList.extended, cardName);
 }
 
-function addLegalityElement(banList, cardName, cardItem, bannedTemplate, extendedTemplate, loadingTemplate, cardsToLoad, deckListEntry) {
+function addLegalityElement(
+    banList: BanListResponse,
+    cardName: string,
+    cardItem: HTMLElement,
+    bannedTemplate: HTMLTemplateElement,
+    extendedTemplate: HTMLTemplateElement,
+    loadingTemplate: HTMLTemplateElement,
+    cardsToLoad: LoadableCards,
+    deckListEntry: HTMLElement
+) {
     if (isBanned(banList, cardName)) {
         cardItem.append(bannedTemplate.content.cloneNode(true));
         cardItem.classList.add('banned');
@@ -233,10 +244,10 @@ function addLegalityElement(banList, cardName, cardItem, bannedTemplate, extende
     }
 
     // Load every card --> make sure that not-legal and (implicitly) banned are correctly shown
-    if (cardsToLoad.hasOwnProperty(deckListEntry.dataset.cardId)) {
-        cardsToLoad[deckListEntry.dataset.cardId].push(deckListEntry);
+    if (cardsToLoad.has(deckListEntry.dataset.cardId)) {
+        cardsToLoad.get(deckListEntry.dataset.cardId).push(deckListEntry);
     } else {
-        cardsToLoad[deckListEntry.dataset.cardId] = [deckListEntry];
+        cardsToLoad.set(deckListEntry.dataset.cardId, [deckListEntry]);
     }
 }
 
@@ -276,17 +287,17 @@ function checkDeck() {
         return Promise.resolve();
     }
 
-    let templateFn;
+    let templateFn: (cssClass: string, text: string, html?: string) => string;
     switch (contentMode) {
         case CONTENT_MODE_DECK_LIST: {
-            templateFn = (cssClass, text) => `<dl class="card-legality">
-<dd class="${cssClass}" title="${text}">${text}</dd></dl>`;
+            templateFn = (cssClass, text, html = '') => `<dl class="card-legality">
+<dd class="${cssClass}" title="${text}">${text}${html}</dd></dl>`;
             break;
         }
         case CONTENT_MODE_DECK_VISUAL:
         case CONTENT_MODE_SEARCH_IMAGES:
-            templateFn = (cssClass, text) => `<div class="legality-overlay ${cssClass}"></div>
-<span class="card-grid-item-count card-grid-item-legality ${cssClass}">${text}</span>`;
+            templateFn = (cssClass, text, html = '') => `<div class="legality-overlay ${cssClass}"></div>
+<span class="card-grid-item-count card-grid-item-legality ${cssClass}">${text}${html}</span>`;
             break;
     }
 
@@ -296,22 +307,15 @@ function checkDeck() {
     const bannedTemplate = document.createElement('template');
     const extendedTemplate = document.createElement('template');
     const futureBannedTemplate = document.createElement('template');
-    loadingTemplate.innerHTML = templateFn('loading', '<div class="dot-flashing"></div>');
+    loadingTemplate.innerHTML = templateFn('loading', '', '<div class="dot-flashing"></div>');
     legalTemplate.innerHTML = templateFn('legal', 'Legal');
     notLegalTemplate.innerHTML = templateFn('not-legal', 'Not Legal');
     bannedTemplate.innerHTML = templateFn('banned', 'Banned');
     extendedTemplate.innerHTML = templateFn('extended', 'Extended');
-    const now = new Date();
-    let futureBannedClass;
-    if (now >= new Date(2022, 5, 1)) { // Rule change effective from 01. June 2022 onwards
-        futureBannedTemplate.innerHTML = templateFn('banned', 'Banned');
-        futureBannedClass = 'banned';
-    } else {
-        futureBannedTemplate.innerHTML = templateFn('future-banned', 'Future Banned (From 01. June)');
-        futureBannedClass = 'future-banned';
-    }
+    const futureBannedClass = 'banned';
+    futureBannedTemplate.innerHTML = templateFn('banned', 'Banned');
 
-    let cardsToLoad = {};
+    const cardsToLoad: LoadableCards = new Map<string, HTMLElement[]>();
 
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({action: 'get/ban/list'}, (banlist) => {
@@ -320,75 +324,92 @@ function checkDeck() {
                 return;
             }
 
+            // TODO deserialize SerializableMap
+            // TODO everywhere when interacting with the chrome API
+
             resolve(banlist);
         });
-    }).then((banList) => {
-        console.log('Received Casual Challenge ban list: ', banList);
+    })
+        .then(deserialize)
+        .then((banList: BanListResponse) => {
+            console.log('Received Casual Challenge ban list: ', banList);
 
-        switch (contentMode) {
-            case CONTENT_MODE_DECK_LIST:
-                document.querySelectorAll('.deck-list-entry').forEach((deckListEntry) => {
-                    let cardName = deckListEntry.querySelector('.deck-list-entry-name').innerText.trim();
-                    addLegalityElement(
-                        banList,
-                        cardName,
-                        deckListEntry,
-                        bannedTemplate,
-                        extendedTemplate,
-                        loadingTemplate,
-                        cardsToLoad,
-                        deckListEntry,
-                    );
-                });
-                break;
-            case CONTENT_MODE_DECK_VISUAL:
-            case CONTENT_MODE_SEARCH_IMAGES:
-                document.querySelectorAll('.card-grid-item').forEach((deckListEntry) => {
-                    if (deckListEntry.classList.contains('flexbox-spacer')) {
-                        return;
-                    }
+            switch (contentMode) {
+                case CONTENT_MODE_DECK_LIST:
+                    document.querySelectorAll('.deck-list-entry').forEach((deckListEntry: HTMLElement) => {
+                        const cardName = (deckListEntry.querySelector('.deck-list-entry-name') as HTMLElement).innerText.trim();
+                        addLegalityElement(
+                            banList,
+                            cardName,
+                            deckListEntry,
+                            bannedTemplate,
+                            extendedTemplate,
+                            loadingTemplate,
+                            cardsToLoad,
+                            deckListEntry,
+                        );
+                    });
+                    break;
+                case CONTENT_MODE_DECK_VISUAL:
+                case CONTENT_MODE_SEARCH_IMAGES:
+                    document.querySelectorAll('.card-grid-item').forEach((deckListEntry: HTMLElement) => {
+                        if (deckListEntry.classList.contains('flexbox-spacer')) {
+                            return;
+                        }
 
-                    let cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').innerText.trim();
-                    const cardItem = deckListEntry.querySelector('.card-grid-item-card');
-                    addLegalityElement(
-                        banList,
-                        cardName,
-                        cardItem,
-                        bannedTemplate,
-                        extendedTemplate,
-                        loadingTemplate,
-                        cardsToLoad,
-                        deckListEntry,
-                    );
-                });
-                break;
-        }
+                        const cardName = (deckListEntry.querySelector('.card-grid-item-invisible-label') as HTMLElement).innerText.trim();
+                        const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
+                        addLegalityElement(
+                            banList,
+                            cardName,
+                            cardItem,
+                            bannedTemplate,
+                            extendedTemplate,
+                            loadingTemplate,
+                            cardsToLoad,
+                            deckListEntry,
+                        );
+                    });
+                    break;
+            }
 
-        let cardIdsToLoad = Object.keys(cardsToLoad);
-        if (cardIdsToLoad.length === 0) {
-            return Promise.resolve();
-        }
+            if (cardsToLoad.size === 0) {
+                return Promise.resolve();
+            }
+            const cardIdsToLoad = Array.from(cardsToLoad.keys());
 
-        return loadCardsThroughCache(cardIdsToLoad)
-            .then(loadedCards => {
-                loadedCards.forEach(cardObject => {
-                    const cardId = cardObject.id;
-                    const deckListEntry = cardsToLoad[cardId];
-                    let appendToDeckListEntry;
-                    switch (contentMode) {
-                        case CONTENT_MODE_DECK_LIST:
-                            appendToDeckListEntry = appendToDeckListEntryRow;
-                            break;
-                        case CONTENT_MODE_DECK_VISUAL:
-                        case CONTENT_MODE_SEARCH_IMAGES:
-                            appendToDeckListEntry = appendToDeckListEntryImage;
-                            break;
-                    }
+            return loadCardsThroughCache(cardIdsToLoad)
+                .then(loadedCards => {
+                    loadedCards.forEach(cardObject => {
+                        const cardId = cardObject.id;
+                        const deckListEntry = cardsToLoad.get(cardId);
+                        let appendToDeckListEntry: typeof appendToDeckListEntryRow;
+                        switch (contentMode) {
+                            case CONTENT_MODE_DECK_LIST:
+                                appendToDeckListEntry = appendToDeckListEntryRow;
+                                break;
+                            case CONTENT_MODE_DECK_VISUAL:
+                            case CONTENT_MODE_SEARCH_IMAGES:
+                                appendToDeckListEntry = appendToDeckListEntryImage;
+                                break;
+                        }
 
-                    if (Array.isArray(deckListEntry)) {
-                        deckListEntry.forEach((entry) => {
+                        if (Array.isArray(deckListEntry)) {
+                            deckListEntry.forEach((entry) => {
+                                appendToDeckListEntry(
+                                    entry,
+                                    cardObject,
+                                    legalTemplate,
+                                    futureBannedTemplate,
+                                    futureBannedClass,
+                                    notLegalTemplate,
+                                    banList,
+                                    bannedTemplate,
+                                    extendedTemplate);
+                            });
+                        } else {
                             appendToDeckListEntry(
-                                entry,
+                                deckListEntry,
                                 cardObject,
                                 legalTemplate,
                                 futureBannedTemplate,
@@ -397,46 +418,61 @@ function checkDeck() {
                                 banList,
                                 bannedTemplate,
                                 extendedTemplate);
-                        });
-                    } else {
-                        appendToDeckListEntry(
-                            deckListEntry,
-                            cardObject,
-                            legalTemplate,
-                            futureBannedTemplate,
-                            futureBannedClass,
-                            notLegalTemplate,
-                            banList,
-                            bannedTemplate,
-                            extendedTemplate);
-                    }
+                        }
+                    });
                 });
-            });
-    })
+        })
         .then(() => {
             displayEnabled();
             contentWasChecked = true;
         });
 }
 
-function appendToDeckListEntryImage(deckListEntry, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
-                                    notLegalTemplate, banList, bannedTemplate, extendedTemplate) {
+function appendToDeckListEntryImage(
+    deckListEntry: HTMLElement,
+    cardObject: Card,
+    legalTemplate: HTMLTemplateElement,
+    futureBannedTemplate: HTMLTemplateElement,
+    futureBannedClass: string,
+    notLegalTemplate: HTMLTemplateElement,
+    banList: BanListResponse,
+    bannedTemplate: HTMLTemplateElement,
+    extendedTemplate: HTMLTemplateElement
+) {
     deckListEntry.querySelector('.legality-overlay').remove();
     deckListEntry.querySelector('.card-grid-item-legality').remove();
-    const cardItem = deckListEntry.querySelector('.card-grid-item-card');
+    const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
     modifyCardItem(cardItem, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
         notLegalTemplate, banList, bannedTemplate, extendedTemplate);
 }
 
-function appendToDeckListEntryRow(deckListEntry, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
-                                  notLegalTemplate, banList, bannedTemplate, extendedTemplate) {
+function appendToDeckListEntryRow(
+    deckListEntry: HTMLElement,
+    cardObject: Card,
+    legalTemplate: HTMLTemplateElement,
+    futureBannedTemplate: HTMLTemplateElement,
+    futureBannedClass: string,
+    notLegalTemplate: HTMLTemplateElement,
+    banList: BanListResponse,
+    bannedTemplate: HTMLTemplateElement,
+    extendedTemplate: HTMLTemplateElement
+) {
     deckListEntry.querySelector('.card-legality').remove();
     modifyCardItem(deckListEntry, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
         notLegalTemplate, banList, bannedTemplate, extendedTemplate)
 }
 
-function modifyCardItem(cardItem, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
-                        notLegalTemplate, banList, bannedTemplate, extendedTemplate) {
+function modifyCardItem(
+    cardItem: HTMLElement,
+    cardObject: Card,
+    legalTemplate: HTMLTemplateElement,
+    futureBannedTemplate: HTMLTemplateElement,
+    futureBannedClass: string,
+    notLegalTemplate: HTMLTemplateElement,
+    banList: BanListResponse,
+    bannedTemplate: HTMLTemplateElement,
+    extendedTemplate: HTMLTemplateElement
+) {
     cardItem.classList.remove('loading');
 
     if (cardObject.legalities.vintage !== 'legal') {
@@ -460,7 +496,7 @@ function modifyCardItem(cardItem, cardObject, legalTemplate, futureBannedTemplat
 /**
  * Only looks at Casual Challenge relevant formats.
  */
-function isBannedInAnyFormat(cardObject) {
+function isBannedInAnyFormat(cardObject: Card) {
     const legalities = cardObject.legalities;
     return legalities.standard === 'banned' ||
         legalities.pioneer === 'banned' ||
@@ -470,43 +506,42 @@ function isBannedInAnyFormat(cardObject) {
         legalities.pauper === 'banned';
 }
 
-function loadCardsThroughCache(cardIdsToLoad) {
-    const loadedCards = [];
-    const remainingIds = [];
-    let cardCache;
+function loadCardsThroughCache(cardIdsToLoad: ScryfallUUID[]) {
+    const loadedCards: Card[] = [];
+    const remainingIds: string[] = [];
+    let cardCache: Map<ScryfallUUID, Card>;
     // Keep a reference in case we need to clear the cache
-    let apiLoadedCards;
+    let apiLoadedCards: Card[];
 
-    return chrome.storage.local
-        .get(STORAGE_KEY_CARD_CACHE)
+    return localStorage.get<Map<ScryfallUUID, Card>>(StorageKeys.CARD_CACHE)
         .then(cardCacheFromStorage => {
-            let now = Date.now();
+            const now = Date.now();
 
-            if (!cardCacheFromStorage.hasOwnProperty(STORAGE_KEY_CARD_CACHE)) {
+            if (cardCacheFromStorage === null) {
                 // AddAll cardIdsToLoad to remainingIds
                 Array.prototype.push.apply(remainingIds, cardIdsToLoad);
                 // Create new cache object
-                cardCache = {};
+                cardCache = new SerializableMap<ScryfallUUID, Card>();
             } else {
-                cardCache = cardCacheFromStorage[STORAGE_KEY_CARD_CACHE];
+                cardCache = cardCacheFromStorage;
 
                 // Each card id either ends up either in the loadedCards (because
                 // it was found fresh in cache.
                 // Or in the remainingIds to be loaded in the next step.
                 cardIdsToLoad.forEach(cardId => {
-                    if (!cardCache.hasOwnProperty(cardId)) {
+                    if (!cardCache.has(cardId)) {
                         // Not found in cache --> load
                         remainingIds.push(cardId);
                         return;
                     }
 
-                    let cardObject = cardCache[cardId];
+                    const cardObject = cardCache.get(cardId);
                     if ((now - cardObject.cachedAt) < CACHE_DURATION) {
                         loadedCards.push(cardObject);
                     } else {
                         // Stale entry --> remove & reload
                         console.log('Data was stale.');
-                        delete cardCache[cardId];
+                        cardCache.delete(cardId);
                         remainingIds.push(cardId);
                     }
                 });
@@ -534,9 +569,9 @@ function loadCardsThroughCache(cardIdsToLoad) {
                 .then(collection => collection.data)
                 .then(fromApi => {
                     console.log('Loaded ' + fromApi.length + ' cards via API', fromApi);
-                    fromApi.forEach(cardObject => {
+                    fromApi.forEach((cardObject: Card) => {
                         cardObject.cachedAt = now;
-                        cardCache[cardObject.id] = cardObject;
+                        cardCache.set(cardObject.id, cardObject);
                     });
 
                     apiLoadedCards = fromApi;
@@ -546,7 +581,7 @@ function loadCardsThroughCache(cardIdsToLoad) {
         })
         .then(loadedCards => {
             // Store modified cache object
-            return chrome.storage.local.set({[STORAGE_KEY_CARD_CACHE]: cardCache})
+            return localStorage.set(StorageKeys.CARD_CACHE, cardCache)
                 // Pass loadedCards outside
                 .then(() => {
                     return loadedCards
@@ -555,14 +590,14 @@ function loadCardsThroughCache(cardIdsToLoad) {
                     if (error.toString() === 'Error: QUOTA_BYTES quota exceeded') {
                         console.log('Cleaning out old cards from cache.')
                         // Cache got too big --> delete it, and just store the newest batch of cards
-                        return chrome.storage.local.remove(STORAGE_KEY_CARD_CACHE)
+                        return chrome.storage.local.remove(StorageKeys.CARD_CACHE)
                             .then(() => {
-                                cardCache = {};
+                                cardCache = new SerializableMap<ScryfallUUID, Card>();
                                 apiLoadedCards.forEach(cardObject => {
-                                    cardCache[cardObject.id] = cardObject;
+                                    cardCache.set(cardObject.id, cardObject);
                                 });
 
-                                return chrome.storage.local.set({[STORAGE_KEY_CARD_CACHE]: cardCache})
+                                return localStorage.set(StorageKeys.CARD_CACHE, cardCache)
                             })
                             .then(() => {
                                 return loadedCards;
@@ -612,26 +647,22 @@ function displayDisabled() {
     if (typeof enabledButton !== 'undefined') enabledButton.classList.add('hidden');
 }
 
-function storeCheckFlag(newValue) {
+function storeCheckFlag(newValue: CheckMode) {
     switch (contentMode) {
         case CONTENT_MODE_DECK_LIST:
         case CONTENT_MODE_DECK_VISUAL:
-            return chrome.storage.sync
-                .get(STORAGE_KEY_ENABLED_DECKS)
+            return syncStorage.get<Map<string, CheckMode>>(StorageKeys.ENABLED_DECKS)
                 .then(enabledDecks => {
-                    if (enabledDecks.hasOwnProperty(STORAGE_KEY_ENABLED_DECKS)) {
-                        enabledDecks = enabledDecks[STORAGE_KEY_ENABLED_DECKS];
+                    console.log('storeCheckFlag got enabledDecks', enabledDecks);
+                    if (enabledDecks === null) {
+                        enabledDecks = new SerializableMap<string, CheckMode>();
                     }
-                    enabledDecks[getDeckId()] = newValue;
+                    enabledDecks.set(getDeckId(), newValue);
 
-                    return chrome.storage.sync.set(
-                        {[STORAGE_KEY_ENABLED_DECKS]: enabledDecks},
-                    );
+                    return syncStorage.set(StorageKeys.ENABLED_DECKS, enabledDecks);
                 });
         case CONTENT_MODE_SEARCH_IMAGES:
-            return chrome.storage.sync.set(
-                {[STORAGE_KEY_SEARCH_CHECK_MODE]: newValue},
-            );
+            return syncStorage.set(StorageKeys.SEARCH_CHECK_MODE, newValue);
         default:
             // Not a deck --> nothing to do
             return Promise.resolve();
@@ -640,18 +671,14 @@ function storeCheckFlag(newValue) {
 
 }
 
-function enableChecks(mode) {
-    if (typeof mode === 'undefined') {
-        mode = true;
-    }
-
+function enableChecks() {
     displayLoading();
-    storeCheckFlag(mode)
+    storeCheckFlag('overlay')
         .then(() => {
             if (contentMode === CONTENT_MODE_DECK_LIST &&
-                document.getElementById('with').value !== 'eur') { // showing euros?
+                (document.getElementById('with') as HTMLInputElement).value !== 'eur') { // showing euros?
                 // ... otherwise: switch to correct view
-                let queryParameters = new URLSearchParams(location.search);
+                const queryParameters = new URLSearchParams(location.search);
                 queryParameters.set('with', 'eur');
                 location.search = queryParameters.toString();
             } else {
@@ -662,7 +689,7 @@ function enableChecks(mode) {
 
 function disableChecks() {
     displayLoading();
-    storeCheckFlag(false)
+    storeCheckFlag('disabled')
         .then(() => {
             if (contentWasChecked) {
                 // Hide everything we added

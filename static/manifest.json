@@ -1,26 +1,41 @@
 {
-  "manifest_version": 3,
   "name": "Scryfall - Casual Challenge Checker",
-  "version": "0.4.0",
   "description": "Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a custom MtG format created by XieLong and Janosch.exe",
-  "icons": {
-    "16": "/images/icon_16.png",
-    "32": "/images/icon_32.png",
-    "48": "/images/icon_48.png",
-    "128": "/images/icon_128.png"
-  },
+  "version": "0.5.0",
+  "manifest_version": 3,
   "author": "Raoul Zander",
   "homepage_url": "https://sites.google.com/view/a5magicdivision/casual-challenge",
-  "background": {
-    "service_worker": "background.js"
+  "icons": {
+    "16": "/icons/16x.png",
+    "32": "/icons/32x.png",
+    "48": "/icons/48x.png",
+    "128": "/icons/128x.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "My basic Chrome extension",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "/icons/16x.png",
+      "32": "/icons/32x.png",
+      "48": "/icons/48x.png",
+      "128": "/icons/128x.png"
+    }
   },
   "permissions": [
     "storage",
+    "scripting",
     "declarativeNetRequest"
   ],
   "host_permissions": [
     "https://*.scryfall.com/"
   ],
+  "background": {
+    "service_worker": "serviceWorker.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -29,7 +44,7 @@
       ],
       "run_at": "document_idle",
       "css": [
-        "decklist-content-style.css"
+        "styles/decklist-content-script.css"
       ],
       "js": [
         "decklist-content-script.js"
@@ -41,7 +56,7 @@
       ],
       "run_at": "document_idle",
       "css": [
-        "single-card-content-style.css"
+        "styles/single-card-content-script.css"
       ],
       "js": [
         "single-card-content-script.js"

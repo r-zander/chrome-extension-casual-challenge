@@ -1,5 +1,10 @@
-function init() {
-    const cardName = document.querySelector('.card-text-card-name').innerText.trim();
+import '../../../styles/single-card-content.css';
+import {BanFormats, Legalities, SingleBanResponse} from "../../common/types";
+import {deserialize} from "../../common/serialization";
+
+function init(): void {
+    const cardNameElement: HTMLElement = document.querySelector('head > meta[property="og:title"]');
+    const cardName = cardNameElement.getAttribute('content').trim();
 
     chrome.runtime.sendMessage(
         {action: 'get/ban/card', cardName: cardName},
@@ -9,17 +14,17 @@ function init() {
                 return;
             }
 
-            displayLegality(banStatus);
+            displayLegality(deserialize(banStatus));
         });
 }
 
-function displayLegality(banStatus) {
-    let legalities = {};
-    let vintageLegality;
-    document.querySelectorAll('.card-legality-item > dt').forEach(formatElement => {
-        if (formatElement.innerText.trim() === 'Vintage') {
-            vintageLegality = formatElement.nextElementSibling.classList.item(0);
-        }
+function displayLegality(banStatus: SingleBanResponse): void {
+    const legalities: Legalities = {};
+    // let vintageLegality;
+    document.querySelectorAll('.card-legality-item > dt').forEach((formatElement: HTMLElement) => {
+        // if (formatElement.innerText.trim() === 'Vintage') {
+        //     vintageLegality = formatElement.nextElementSibling.classList.item(0);
+        // }
 
         legalities[formatElement.innerText.trim()] = formatElement.nextElementSibling.classList.item(0);
     });
@@ -54,8 +59,8 @@ function displayLegality(banStatus) {
 /**
  * Only looks at Casual Challenge relevant formats.
  */
-function bannedFormats(legalities) {
-    let bannedInFormats = [];
+function bannedFormats(legalities: Legalities): string[] {
+    const bannedInFormats: string[] = [];
     ['Standard', 'Pioneer', 'Modern', 'Legacy', 'Vintage', 'Pauper'].forEach(format => {
         if (legalities[format] === 'banned') {
             bannedInFormats.push(format);
@@ -65,7 +70,7 @@ function bannedFormats(legalities) {
     return bannedInFormats;
 }
 
-function formatsToString(formats) {
+function formatsToString(formats: BanFormats): string {
     let result = '';
     for (const [format, deckPercentage] of Object.entries(formats)) {
         if (result.length > 0) {
@@ -77,7 +82,7 @@ function formatsToString(formats) {
     return result;
 }
 
-function appendLegalityElement(cssClass, text, explanation) {
+function appendLegalityElement(cssClass: string, text: string, explanation: string): void {
     const template = document.createElement('template');
     template.innerHTML =
         `<div class="card-legality-item">
