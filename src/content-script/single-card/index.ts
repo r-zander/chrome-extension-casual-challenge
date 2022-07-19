@@ -1,5 +1,5 @@
 import '../../../styles/single-card-content.css';
-import {BanFormats, Legalities, SingleBanResponse} from "../../common/types";
+import {BanFormats, Legalities, SingleCardResponse} from "../../common/types";
 import {deserialize} from "../../common/serialization";
 
 function init(): void {
@@ -7,18 +7,18 @@ function init(): void {
     const cardName = cardNameElement.getAttribute('content').trim();
 
     chrome.runtime.sendMessage(
-        {action: 'get/ban/card', cardName: cardName},
-        (banStatus) => {
+        {action: 'get/card/info', cardName: cardName},
+        (cardInfo) => {
             if (chrome.runtime.lastError) {
                 console.error('Error while fetching ban status.', chrome.runtime.lastError);
                 return;
             }
 
-            displayLegality(deserialize(banStatus));
+            displayLegality(deserialize(cardInfo));
         });
 }
 
-function displayLegality(banStatus: SingleBanResponse): void {
+function displayLegality(cardInfo: SingleCardResponse): void {
     const legalities: Legalities = {};
     // let vintageLegality;
     document.querySelectorAll('.card-legality-item > dt').forEach((formatElement: HTMLElement) => {
@@ -32,28 +32,25 @@ function displayLegality(banStatus: SingleBanResponse): void {
     if (legalities['Vintage'] !== 'legal') {
         appendLegalityElement('not-legal', 'Not Legal',
             'This card is not fully legal in Vintage.');
-    } else if (banStatus.banStatus === 'banned') {
+    } else if (cardInfo.banStatus === 'banned') {
         appendLegalityElement('banned', 'Banned',
-            'Played in ' + formatsToString(banStatus.formats) + ' competitive decks');
+            'Played in ' + formatsToString(cardInfo.banFormats) + ' competitive decks');
     } else {
         const bannedInFormats = bannedFormats(legalities);
         if (bannedInFormats.length > 0) {
-            const now = new Date();
-            if (now >= new Date(2022, 5, 1)) {
-                appendLegalityElement('banned', 'Banned',
-                    'Banned in ' + bannedInFormats.join(', ') + '');
-            } else {
-                appendLegalityElement('future-banned', 'Future Banned',
-                    'From 01. June it will be banned, because it\'s banned in ' + bannedInFormats.join(', ') + '');
-            }
-        } else if (banStatus.banStatus === 'extended') {
+            appendLegalityElement('banned', 'Banned',
+                'Banned in ' + bannedInFormats.join(', ') + '');
+        } else if (cardInfo.banStatus === 'extended') {
             appendLegalityElement('extended', 'Extended',
-                'Played in ' + formatsToString(banStatus.formats) + ' competitive decks');
+                'Played in ' + formatsToString(cardInfo.banFormats) + ' competitive decks');
         } else {
             appendLegalityElement('legal', 'Legal',
                 'There are no bans and the card is legal in Vintage.');
         }
     }
+
+    // "Play in Casual Challenge              ### BP"
+    console.info('Card price:', cardInfo.budgetPoints);
 }
 
 /**

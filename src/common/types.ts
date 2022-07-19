@@ -3,6 +3,12 @@ export interface SingleBanResponse {
     formats: BanFormats
 }
 
+export interface SingleCardResponse {
+    budgetPoints: number,
+    banStatus: string,
+    banFormats: BanFormats
+}
+
 export interface BanListResponse {
     bans: Bans,
     extended: Bans

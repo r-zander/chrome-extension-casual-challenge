@@ -1,10 +1,12 @@
-import {Ban, BanFormats, BanListResponse, Bans, SingleBanResponse} from './common/types';
+import {Ban, BanFormats, BanListResponse, Bans, SingleBanResponse, SingleCardResponse} from './common/types';
 import {StorageKeys} from "./common/storage";
 import {SerializableMap} from "./common/SerializableMap";
+import CardPrices from "../data/card-prices.json";
 
 const vintageRestricted = loadVintageRestricted();
 const bans = loadBans(loadRawBans);
 const extendedBans = loadBans(loadRawExtendedBans);
+const budgetPoints = loadBudgetPoints(CardPrices, 'B');
 
 chrome.runtime.onInstalled.addListener(
     details => {
@@ -29,6 +31,9 @@ chrome.runtime.onMessage.addListener(
                 return;
             case 'get/ban/card':
                 sendBanStatus(request.cardName, sendResponse);
+                return;
+            case 'get/card/info':
+                sendCardInfo(request.cardName, sendResponse);
                 return;
             default:
                 console.error('Unknown action "' + request.action + '" in request.', request);
@@ -55,6 +60,28 @@ function sendBanList(sendResponse: (response: BanListResponse) => void) {
             bans: bans,
             extended: extendedBans,
         });
+}
+
+function sendCardInfo(cardName: string, sendResponse: (response: SingleCardResponse) => void) {
+    const price = budgetPoints.get(cardName);
+    if (bans.has(cardName)) {
+        sendResponse({banStatus: 'banned', banFormats: bans.get(cardName), budgetPoints: price});
+    }
+
+    if (extendedBans.has(cardName)) {
+        sendResponse({banStatus: 'extended', banFormats: extendedBans.get(cardName), budgetPoints: price});
+    }
+
+    sendResponse({banStatus: null, banFormats: null, budgetPoints: price});
+}
+
+function loadBudgetPoints(input: Record<string, Record<string, number>>, priceIndex: string): Map<string, number> {
+    const result = new Map<string, number>();
+    for (const [cardName, prices] of Object.entries(input)) {
+        result.set(cardName, Math.round(prices[priceIndex] * 100));
+    }
+
+    return result;
 }
 
 function loadBans(fn: () => Ban[]): Bans {
