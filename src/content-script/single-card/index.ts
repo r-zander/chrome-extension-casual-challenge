@@ -1,6 +1,7 @@
 import '../../../styles/single-card-content.css';
 import {BanFormats, Legalities, SingleCardResponse} from "../../common/types";
 import {deserialize} from "../../common/serialization";
+import {formatBudgetPoints} from "../../common/formatting";
 
 function init(): void {
     const cardNameElement: HTMLElement = document.querySelector('head > meta[property="og:title"]');
@@ -8,17 +9,51 @@ function init(): void {
 
     chrome.runtime.sendMessage(
         {action: 'get/card/info', cardName: cardName},
-        (cardInfo) => {
+        (response) => {
             if (chrome.runtime.lastError) {
                 console.error('Error while fetching ban status.', chrome.runtime.lastError);
                 return;
             }
 
-            displayLegality(deserialize(cardInfo));
+            const cardInfo: SingleCardResponse = deserialize(response)
+
+            displayLegality(cardInfo.banStatus, cardInfo.banFormats);
+            displayBudgetPoints(cardInfo.budgetPoints);
         });
 }
 
-function displayLegality(cardInfo: SingleCardResponse): void {
+function displayBudgetPoints(budgetPoints: number) {
+    const printsTables = document.querySelectorAll('.prints > .prints-table');
+    const lastPrintTable = printsTables.item(printsTables.length - 1);
+    const formattedBP = formatBudgetPoints(budgetPoints);
+    const html = `
+<table class="prints-table">
+    <thead>
+        <tr>
+            <th>
+                <span>Casual Challenge</span>
+            </th>
+            <th style="white-space: nowrap;">
+                <span>BP</span>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <span style="cursor: inherit;">Budget Points</span>
+            </td>
+            <td>
+                <span style="cursor: inherit; white-space: nowrap">${formattedBP}</span>
+            </td>
+        </tr>                                                        
+    </tbody>
+</table>`;
+
+    lastPrintTable.insertAdjacentHTML('afterend', html);
+}
+
+function displayLegality(banStatus: string, banFormats: BanFormats): void {
     const legalities: Legalities = {};
     // let vintageLegality;
     document.querySelectorAll('.card-legality-item > dt').forEach((formatElement: HTMLElement) => {
@@ -32,25 +67,22 @@ function displayLegality(cardInfo: SingleCardResponse): void {
     if (legalities['Vintage'] !== 'legal') {
         appendLegalityElement('not-legal', 'Not Legal',
             'This card is not fully legal in Vintage.');
-    } else if (cardInfo.banStatus === 'banned') {
+    } else if (banStatus === 'banned') {
         appendLegalityElement('banned', 'Banned',
-            'Played in ' + formatsToString(cardInfo.banFormats) + ' competitive decks');
+            'Played in ' + formatsToString(banFormats) + ' competitive decks');
     } else {
         const bannedInFormats = bannedFormats(legalities);
         if (bannedInFormats.length > 0) {
             appendLegalityElement('banned', 'Banned',
                 'Banned in ' + bannedInFormats.join(', ') + '');
-        } else if (cardInfo.banStatus === 'extended') {
+        } else if (banStatus === 'extended') {
             appendLegalityElement('extended', 'Extended',
-                'Played in ' + formatsToString(cardInfo.banFormats) + ' competitive decks');
+                'Played in ' + formatsToString(banFormats) + ' competitive decks');
         } else {
             appendLegalityElement('legal', 'Legal',
                 'There are no bans and the card is legal in Vintage.');
         }
     }
-
-    // "Play in Casual Challenge              ### BP"
-    console.info('Card price:', cardInfo.budgetPoints);
 }
 
 /**
