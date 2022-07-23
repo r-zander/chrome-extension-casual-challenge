@@ -40,9 +40,11 @@ export const localStorage: SimpleStorage = {
 // TODO each storage key should define if it's
 // a) local, session, sync
 // b) value type
+// c) default value
 export const StorageKeys = {
     ENABLED_DECKS: 'enabledDecks',
     SEARCH_CHECK_MODE: 'searchCheckMode',
     CARD_CACHE: 'cardCache',
+    DISPLAY_EXTENDED: 'displayExtended'
 }
 

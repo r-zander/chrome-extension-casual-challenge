@@ -57,10 +57,11 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
   - `document.querySelector('a[href="/random"]').href = '/random?q=' + encodeURIComponent(document.getElementById('q').value + ' lang:en')`
 
   1. On Start Page:
-    1. Random Card --> searches for entered query
-    2. New button "Casual Challenge inspiration" with saved query `(rarity:r OR rarity:m) eur>=2 eur<=5 lang:en`
+  1. Random Card --> searches for entered query
+  2. New button "Casual Challenge inspiration" with saved query `(rarity:r OR rarity:m) eur>=2 eur<=5 lang:en`
   2. On Advanced Search page
-    1. New Button "Random card with these options"
+  1. New Button "Random card with these options"
+- https://github.com/fregante/chrome-webstore-upload-cli
 
 ## Known Bugs
 

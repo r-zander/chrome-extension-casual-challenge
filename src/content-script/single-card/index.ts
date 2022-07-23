@@ -2,10 +2,16 @@ import '../../../styles/single-card-content.css';
 import {BanFormats, Legalities, SingleCardResponse} from "../../common/types";
 import {deserialize} from "../../common/serialization";
 import {formatBudgetPoints, formatBudgetPointsShare} from "../../common/formatting";
+import {StorageKeys, syncStorage} from "../../common/storage";
 
-function init(): void {
+let displayExtended: boolean = false;
+
+async function init(): Promise<void> {
     const cardNameElement: HTMLElement = document.querySelector('head > meta[property="og:title"]');
     const cardName = cardNameElement.getAttribute('content').trim();
+
+    displayExtended = await syncStorage.get(StorageKeys.DISPLAY_EXTENDED, false);
+    console.log('DisplayExtended?', displayExtended);
 
     chrome.runtime.sendMessage(
         {action: 'get/card/info', cardName: cardName},
@@ -79,12 +85,20 @@ function displayLegality(banStatus: string, banFormats: BanFormats): void {
             'Played in ' + formatsToString(banFormats) + ' competitive decks');
     } else {
         const bannedInFormats = bannedFormats(legalities);
+        console.log('DisplayExtended?', displayExtended);
+
         if (bannedInFormats.length > 0) {
             appendLegalityElement('banned', 'Banned',
                 'Banned in ' + bannedInFormats.join(', ') + '');
         } else if (banStatus === 'extended') {
-            appendLegalityElement('extended', 'Extended',
-                'Played in ' + formatsToString(banFormats) + ' competitive decks');
+            if (displayExtended) {
+                appendLegalityElement('extended', 'Extended',
+                    'Played in ' + formatsToString(banFormats) + ' competitive decks');
+            } else {
+                // Don't show "Extended" but still provide the user with format usage information
+                appendLegalityElement('legal', 'Legal',
+                    'Played in ' + formatsToString(banFormats) + ' competitive decks');
+            }
         } else {
             appendLegalityElement('legal', 'Legal',
                 'There are no bans and the card is legal in Vintage.');
@@ -137,4 +151,5 @@ function appendLegalityElement(cssClass: string, text: string, explanation: stri
     }
 }
 
+// noinspection JSIgnoredPromiseFromCall
 init();

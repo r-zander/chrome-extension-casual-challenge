@@ -17,13 +17,13 @@ const extendedBans = loadBans(loadRawExtendedBans);
 const budgetPoints = loadBudgetPoints(CardPrices, 'B');
 
 chrome.runtime.onInstalled.addListener(
-    details => {
-        if (['0.1.0', '0.2.0', '0.2.1', '0.3.0', '0.4.0'].includes(details.previousVersion)
-            /* TODO REMOVE  || details.previousVersion === '0.5.0' */) {
-            // Remove old untyped storage items
-            chrome.storage.sync.remove(StorageKeys.ENABLED_DECKS);
-            chrome.storage.local.remove(StorageKeys.CARD_CACHE);
-        }
+    (details) => {
+      if (['0.1.0', '0.2.0', '0.2.1', '0.3.0', '0.4.0'].includes(details.previousVersion)
+          /* TODO REMOVE  || details.previousVersion === '0.5.0' */) {
+        // Remove old untyped storage items
+        chrome.storage.sync.remove(StorageKeys.ENABLED_DECKS);
+        chrome.storage.local.remove(StorageKeys.CARD_CACHE);
+      }
     }
 )
 
@@ -86,13 +86,20 @@ function sendCardInfo(cardName: string, sendResponse: (response: SingleCardRespo
 }
 
 function getCardInfo(cardName: string): SingleCardResponse {
-  const price = budgetPoints.get(cardName);
+  const price = budgetPoints.get(cardName); // No partial check for budget points, they always have the full name
+  const partialName = cardName.split('//')[0].trim();
   if (bans.has(cardName)) {
     return {banStatus: 'banned', banFormats: bans.get(cardName), budgetPoints: price};
+  }
+  if (bans.has(partialName)) {
+    return {banStatus: 'banned', banFormats: bans.get(partialName), budgetPoints: price};
   }
 
   if (extendedBans.has(cardName)) {
     return {banStatus: 'extended', banFormats: extendedBans.get(cardName), budgetPoints: price};
+  }
+  if (extendedBans.has(partialName)) {
+    return {banStatus: 'extended', banFormats: extendedBans.get(partialName), budgetPoints: price};
   }
 
   return {banStatus: null, banFormats: null, budgetPoints: price};

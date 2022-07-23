@@ -24,6 +24,7 @@ let loadingIndicator: HTMLElement,
     disabledButton: HTMLElement,
     enabledButton: HTMLElement;
 let contentMode = CONTENT_MODE_UNKNOWN;
+let displayExtended: boolean = false;
 let contentWasChecked = false;
 let deckStatistics: DeckStatistics;
 const sidebarClasses = {
@@ -191,6 +192,10 @@ async function init() {
             return;
     }
 
+    // TODO automatically adjust display when the value changes
+    displayExtended = await syncStorage.get(StorageKeys.DISPLAY_EXTENDED, false);
+    console.log('DisplayExtended?', displayExtended);
+
     // Deck title contains 'Casual Challenge' so we can start.
     await checkDeck();
 }
@@ -243,7 +248,11 @@ function isBanned(cardsInfo: MultiCardsResponse, cardName: string) {
 }
 
 function isExtendedBanned(cardsInfo: MultiCardsResponse, cardName: string) {
-    return isCardInBanStatus(cardsInfo, cardName, 'extended');
+    if (displayExtended) {
+        return isCardInBanStatus(cardsInfo, cardName, 'extended');
+    }
+
+    return false;
 }
 
 function addLegalityElement(
