@@ -1,4 +1,12 @@
-import {Ban, BanFormats, BanListResponse, Bans, SingleBanResponse, SingleCardResponse} from './common/types';
+import {
+  Ban,
+  BanFormats,
+  BanListResponse,
+  Bans,
+  MultiCardsResponse,
+  SingleBanResponse,
+  SingleCardResponse
+} from './common/types';
 import {StorageKeys} from "./common/storage";
 import {SerializableMap} from "./common/SerializableMap";
 import CardPrices from "../data/card-prices.json";
@@ -25,20 +33,23 @@ chrome.runtime.onMessage.addListener(
             console.error('Received request without mandatory action property.', request);
             return;
         }
-        switch (request.action) {
-            case 'get/ban/list':
-                sendBanList(sendResponse);
-                return;
-            case 'get/ban/card':
-                sendBanStatus(request.cardName, sendResponse);
-                return;
-            case 'get/card/info':
-                sendCardInfo(request.cardName, sendResponse);
-                return;
-            default:
-                console.error('Unknown action "' + request.action + '" in request.', request);
-                return;
-        }
+      switch (request.action) {
+        case 'get/ban/list':
+          sendBanList(sendResponse);
+          return;
+        case 'get/ban/card':
+          sendBanStatus(request.cardName, sendResponse);
+          return;
+        case 'get/card/info':
+          sendCardInfo(request.cardName, sendResponse);
+          return;
+        case 'get/cards/info':
+          sendCardsInfo(request.cardNames, sendResponse);
+          return;
+        default:
+          console.error('Unknown action "' + request.action + '" in request.', request);
+          return;
+      }
     },
 );
 
@@ -55,36 +66,77 @@ function sendBanStatus(cardName: string, sendResponse: (response: SingleBanRespo
 }
 
 function sendBanList(sendResponse: (response: BanListResponse) => void) {
-    sendResponse(
-        {
-            bans: bans,
-            extended: extendedBans,
-        });
+  sendResponse(
+      {
+        bans: bans,
+        extended: extendedBans,
+      });
+}
+
+function sendCardsInfo(cardNames: string[], sendResponse: (response: MultiCardsResponse) => void) {
+  const response = new SerializableMap<string, SingleCardResponse>();
+  cardNames.forEach(cardName => {
+    response.set(cardName, getCardInfo(cardName));
+  });
+  sendResponse(response);
 }
 
 function sendCardInfo(cardName: string, sendResponse: (response: SingleCardResponse) => void) {
-    const price = budgetPoints.get(cardName);
-    if (bans.has(cardName)) {
-        sendResponse({banStatus: 'banned', banFormats: bans.get(cardName), budgetPoints: price});
-    }
+  sendResponse(getCardInfo(cardName));
+}
 
-    if (extendedBans.has(cardName)) {
-        sendResponse({banStatus: 'extended', banFormats: extendedBans.get(cardName), budgetPoints: price});
-    }
+function getCardInfo(cardName: string): SingleCardResponse {
+  const price = budgetPoints.get(cardName);
+  if (bans.has(cardName)) {
+    return {banStatus: 'banned', banFormats: bans.get(cardName), budgetPoints: price};
+  }
 
-    sendResponse({banStatus: null, banFormats: null, budgetPoints: price});
+  if (extendedBans.has(cardName)) {
+    return {banStatus: 'extended', banFormats: extendedBans.get(cardName), budgetPoints: price};
+  }
+
+  return {banStatus: null, banFormats: null, budgetPoints: price};
+}
+
+function addCardToMap<T>(map: Map<string, T>, cardName: string, value: T) {
+  if (map.has(cardName)) {
+    console.warn('cardName already exists in map.', cardName);
+  }
+
+  map.set(cardName, value);
+
+  // Hack: everything shorter is always available as full name
+  if (cardName.length <= 20) {
+    return;
+  }
+
+  const partialName = cardName.split('//')[0].trim();
+  if (partialName === cardName ||
+      // Hack: Filter out double sided style cards
+      cardName === (partialName + ' // ' + partialName)) {
+    return;
+  }
+
+  if (map.has(partialName)) {
+    console.error('partialName already exists in map.', partialName, cardName);
+    return;
+  }
+
+  map.set(partialName, value);
 }
 
 function loadBudgetPoints(input: Record<string, Record<string, number>>, priceIndex: string): Map<string, number> {
-    const result = new Map<string, number>();
-    for (const [cardName, prices] of Object.entries(input)) {
-        result.set(cardName, Math.round(prices[priceIndex] * 100));
-    }
+  console.log('loadBudgetPoints');
+  const result = new Map<string, number>();
+  for (const [cardName, prices] of Object.entries(input)) {
+    addCardToMap(result, cardName, Math.round(prices[priceIndex] * 100));
+  }
 
-    return result;
+  return result;
 }
 
 function loadBans(fn: () => Ban[]): Bans {
+  console.log('loadBans', fn.name);
     const bans: Bans = new SerializableMap<string, BanFormats>();
     fn().forEach((ban: Ban) => {
         // Filter out any vintage restricted cards, as they should
@@ -92,7 +144,7 @@ function loadBans(fn: () => Ban[]): Bans {
         // eslint-disable-next-line no-prototype-builtins
         if (vintageRestricted.hasOwnProperty(ban.name)) return;
 
-        bans.set(ban.name, ban.formats);
+      addCardToMap(bans, ban.name, ban.formats);
     });
     return bans;
 }

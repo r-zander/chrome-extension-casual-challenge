@@ -38,6 +38,9 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
   - [ ] Remove Est. USD, Est. TIX, Wildcards
 - [ ] Set basic lands to 0€
 - [ ] Support chrome/firefox mobile
+- [ ] Budget Points can be selected as currency in Decklist mode
+  - [ ] Budget share as currency
+- [ ] Enabling checks for a deck is read/written into/from URL as well --> makes sharing a bit easier
 
 ## Additional Features
 
@@ -62,6 +65,8 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 ## Known Bugs
 
 - [x] "Delver of Secrets // Insectile Aberration" isn't shown as banned in search view even tho it is
+- [ ] If you find just a single card with a search, the extension doesn't do anything (because its supposed to be a
+  search result but has the layout of a single card)
 
 ## Deployment
 

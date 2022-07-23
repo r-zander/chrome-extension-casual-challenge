@@ -9,6 +9,8 @@ export interface SingleCardResponse {
     banFormats: BanFormats
 }
 
+export type MultiCardsResponse = Map<string, SingleCardResponse>;
+
 export interface BanListResponse {
     bans: Bans,
     extended: Bans

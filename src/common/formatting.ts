@@ -1,3 +1,5 @@
+import {MAX_BUDGET_POINTS} from "./constants";
+
 const shortPercentageFormat = new Intl.NumberFormat('en-US', {
     style: 'percent',
     maximumSignificantDigits: 2,
@@ -19,6 +21,10 @@ export function formatBudgetPoints(budgetPoints: number) {
     }
 
     return result;
+}
+
+export function formatBudgetPointsShare(budgetPoints: number) {
+    return formatShortPercentage(budgetPoints / MAX_BUDGET_POINTS);
 }
 
 /**

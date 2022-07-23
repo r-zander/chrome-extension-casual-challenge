@@ -62,14 +62,5 @@
         "single-card-content-script.js"
       ]
     }
-  ],
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "withEurRedirect",
-        "enabled": true,
-        "path": "withEurRedirect.json"
-      }
-    ]
-  }
+  ]
 }
