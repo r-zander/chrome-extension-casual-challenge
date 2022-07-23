@@ -1,7 +1,8 @@
 import '../../../styles/single-card-content.css';
 import {BanFormats, Legalities, SingleCardResponse} from "../../common/types";
 import {deserialize} from "../../common/serialization";
-import {formatBudgetPoints} from "../../common/formatting";
+import {formatBudgetPoints, formatShortPercentage} from "../../common/formatting";
+import {MAX_BUDGET_POINTS} from "../../common/constants";
 
 function init(): void {
     const cardNameElement: HTMLElement = document.querySelector('head > meta[property="og:title"]');
@@ -26,6 +27,7 @@ function displayBudgetPoints(budgetPoints: number) {
     const printsTables = document.querySelectorAll('.prints > .prints-table');
     const lastPrintTable = printsTables.item(printsTables.length - 1);
     const formattedBP = formatBudgetPoints(budgetPoints);
+    const formattedPercentage = formatShortPercentage(budgetPoints / MAX_BUDGET_POINTS);
     const html = `
 <table class="prints-table">
     <thead>
@@ -33,8 +35,11 @@ function displayBudgetPoints(budgetPoints: number) {
             <th>
                 <span>Casual Challenge</span>
             </th>
-            <th style="white-space: nowrap;">
+            <th>
                 <span>BP</span>
+            </th>
+            <th>
+                <span>%</span>
             </th>
         </tr>
     </thead>
@@ -44,7 +49,10 @@ function displayBudgetPoints(budgetPoints: number) {
                 <span style="cursor: inherit;">Budget Points</span>
             </td>
             <td>
-                <span style="cursor: inherit; white-space: nowrap">${formattedBP}</span>
+                <span class="currency-eur" style="cursor: inherit;">${formattedBP}</span>
+            </td>
+            <td>
+                <span class="currency-usd" style="cursor: inherit">${formattedPercentage}</span>
             </td>
         </tr>                                                        
     </tbody>

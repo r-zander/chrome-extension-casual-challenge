@@ -1,3 +1,8 @@
+const shortPercentageFormat = new Intl.NumberFormat('en-US', {
+    style: 'percent',
+    maximumSignificantDigits: 2,
+});
+
 export function formatBudgetPoints(budgetPoints: number) {
     const str = String(budgetPoints);
 
@@ -5,7 +10,7 @@ export function formatBudgetPoints(budgetPoints: number) {
 
     let numberPos = str.length;
     for (let i = 0; i < str.length; i++) {
-        if (numberPos !== 0 && numberPos % 2 === 0) {
+        if (numberPos !== str.length && numberPos % 2 === 0) {
             result += '&hairsp;&hairsp;';
         }
 
@@ -14,4 +19,12 @@ export function formatBudgetPoints(budgetPoints: number) {
     }
 
     return result;
+}
+
+/**
+ *
+ * @param ratio 0.0 to 1.0
+ */
+export function formatShortPercentage(ratio: number) {
+    return shortPercentageFormat.format(ratio);
 }
