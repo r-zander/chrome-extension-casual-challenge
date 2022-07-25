@@ -2,72 +2,14 @@
 
 Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a custom MtG format created by Raoul Zander and Janik Nissen.
 
-## Core Features
+## Features
 
-- [x] Check for `.deck-details-title` ~ 'Casual Challenge'
-  - [x] or use a button to flag a deck locally as casual challenge deck
-- [x] Check if we are in **Decklist** mode, otherwise _do nothing_
-- [x] Check legality:
-  - [x] Not-Legal: Anything that's not **legal** in Vintage (API Call?)
-  - [x] Banned: Anything on the banlist
-  - [x] **OPTIONAL** Extended: anything on the extended banlist
-  - [x] --> everything else = legal
-- [x] Cache card infos for 1 week
-- [x] Add a section "Casual Challenge" in the regular legality on a single card view
-- [ ] Search view
-  - [x] Grid/Image/Visual view
-  - [ ] Nice loading display
-  - [x] add buttons to define behavior
-    - [x] ignore casual challenge
-    - [x] show not-legal (faded out), banned & extended with border + hover
-    - [ ] hide everything not legal in casual challenge, and extended with border+hover
-  - [ ] Set view https://scryfall.com/sets/vma?as=grid&order=set
-  - [ ] Inject button in ALL search controls
-- [x] Bug: If a card appears more than once, only the last instance is correctly loaded
-- [x] Auto clear card cache if running out of local storage
-- [x] Bug: Extended is checked before anything else and can thus override not-legal or banned (which are lazy-loaded
-  information)
-  - For not-legal this is solved right now by having the 50 cards that are concerned on a special list, but this is far
-    from ideal
-- [ ] Move "extended" into settings
-- [ ] Auto-fix card prices
-- [ ] Sort by price (in Deck view)
-- [x] Always navigate to '?with=eur"
-- [ ] Overall legality section (like in spreadsheet)
-  - [ ] include price check
-  - [ ] Remove Est. USD, Est. TIX, Wildcards
-- [ ] Set basic lands to 0€
-- [ ] Support chrome/firefox mobile
-- [ ] Budget Points can be selected as currency in Decklist mode
-  - [ ] Budget share as currency
-- [ ] Enabling checks for a deck is read/written into/from URL as well --> makes sharing a bit easier
-
-## Additional Features
-
-- [x] Switch display to `?with=eur&as=list`
-- [x] Show tooltip to display why something is not legal
-- [ ] Fix printings to cheapest print
-- [ ] Have options that allow to set what deck names are considered "Casual Challenge"
-- [ ] **OPTIONAL** Clear cache button
-- [ ] In-page tutorial for new users and each view
-- [ ] Update banner der erklärt, was sich geändert hat
-  - evtl in `#notification-tray`
-- [ ] add explanation of supported views in Extension description
-- [ ] Random enhancement:
-  - `document.querySelector('a[href="/random"]').href = '/random?q=' + encodeURIComponent(document.getElementById('q').value + ' lang:en')`
-
-  1. On Start Page:
-  1. Random Card --> searches for entered query
-  2. New button "Casual Challenge inspiration" with saved query `(rarity:r OR rarity:m) eur>=2 eur<=5 lang:en`
-  2. On Advanced Search page
-  1. New Button "Random card with these options"
-- https://github.com/fregante/chrome-webstore-upload-cli
-
-## Known Bugs
-
-- [x] "Delver of Secrets // Insectile Aberration" isn't shown as banned in search view even tho it is
-- [ ] If you find just a single card with a search, the extension doesn't do anything (because its supposed to be a
-  search result but has the layout of a single card)
+- Shows legality (banned and optionally extended) for the Casual Challenge format
+- Shows Budget Points and percentage of Budget Share
+- Supported views
+  - Single card view
+  - Deck list view (visual and list)
+  - Search view (only images)
 
 ## Deployment
 
