@@ -10,17 +10,35 @@
 
 <body>
 <div class="container">
-    <h1>Hello World!</h1>
-
-    <p>Edit <u>static/popup.html</u> to change this page!</p>
-
-    <button id="go-to-options" class="button" style="margin-top: 2rem;">Open options page</button>
-
     <form>
-        <input type="checkbox" id="displayExtended"/>
-        <label for="displayExtended">
-            Display "Extended" bans
-        </label>
+        <div>
+            <input type="checkbox" id="displayExtended"/>
+            <label for="displayExtended">
+                Display "Extended" bans
+            </label>
+        </div>
+
+        <div>
+            <select id="priceList">
+                <option value="old">Old</option>
+                <option value="04">20220401-20220731</option>
+                <option value="05">20220501-20220731</option>
+                <option value="06">20220601-20220731</option>
+            </select>
+            <label for="priceList">
+                Price List
+            </label>
+        </div>
+
+        <div>
+            <select id="priceIndex">
+                <option value="A">A - cheapestPrintAverage</option>
+                <option value="B">B - cheapestPerDayAverage</option>
+            </select>
+            <label for="priceIndex">
+                Price Index
+            </label>
+        </div>
     </form>
 </div>
 

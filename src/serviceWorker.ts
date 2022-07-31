@@ -7,14 +7,75 @@ import {
   SingleBanResponse,
   SingleCardResponse
 } from './common/types';
-import {StorageKeys} from "./common/storage";
+import {StorageKeys, syncStorage} from "./common/storage";
 import {SerializableMap} from "./common/SerializableMap";
-import CardPrices from "../data/card-prices.json";
+import CardPricesOld from "../data/card-prices.json";
+import CardPrices04 from "../data/card-prices-20220401-20220731.json";
+import CardPrices05 from "../data/card-prices-20220501-20220731.json";
+import CardPrices06 from "../data/card-prices-20220601-20220731.json";
 
 const vintageRestricted = loadVintageRestricted();
 const bans = loadBans(loadRawBans);
 const extendedBans = loadBans(loadRawExtendedBans);
-const budgetPoints = loadBudgetPoints(CardPrices, 'B');
+
+let loadedCardPrices: Record<string, { A: number, B: number }> = CardPrices04;
+syncStorage.get(StorageKeys.PRICE_LIST, '04').then(priceList => {
+  switch (priceList) {
+    case 'old':
+      loadedCardPrices = CardPricesOld;
+      break;
+    case '04':
+      loadedCardPrices = CardPrices04;
+      break;
+    case '05':
+      loadedCardPrices = CardPrices05;
+      break;
+    case '06':
+      loadedCardPrices = CardPrices06;
+      break;
+  }
+});
+
+let budgetPoints: Map<string, number>;
+let loadedPriceIndex = 'B';
+syncStorage.get(StorageKeys.PRICE_INDEX, 'B').then(priceIndex => {
+  loadedPriceIndex = priceIndex;
+  budgetPoints = loadBudgetPoints(loadedCardPrices, priceIndex);
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  console.log('Storage changed:', areaName, changes);
+  if (areaName !== 'sync') {
+    return;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(changes, StorageKeys.PRICE_INDEX)) {
+    loadedPriceIndex = changes[StorageKeys.PRICE_INDEX].newValue;
+    budgetPoints = loadBudgetPoints(loadedCardPrices, loadedPriceIndex);
+    console.log('Updated loaded prices:', loadedPriceIndex);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(changes, StorageKeys.PRICE_LIST)) {
+    const priceList = changes[StorageKeys.PRICE_LIST].newValue;
+    switch (priceList) {
+      case 'old':
+        loadedCardPrices = CardPricesOld;
+        break;
+      case '04':
+        loadedCardPrices = CardPrices04;
+        break;
+      case '05':
+        loadedCardPrices = CardPrices05;
+        break;
+      case '06':
+        loadedCardPrices = CardPrices06;
+        break;
+    }
+    budgetPoints = loadBudgetPoints(loadedCardPrices, loadedPriceIndex);
+    console.log('Updated loaded prices:', priceList, loadedPriceIndex);
+  }
+});
+
 
 chrome.runtime.onInstalled.addListener(
     (details) => {

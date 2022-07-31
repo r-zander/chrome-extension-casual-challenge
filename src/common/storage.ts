@@ -45,6 +45,8 @@ export const StorageKeys = {
     ENABLED_DECKS: 'enabledDecks',
     SEARCH_CHECK_MODE: 'searchCheckMode',
     CARD_CACHE: 'cardCache',
-    DISPLAY_EXTENDED: 'displayExtended'
+    DISPLAY_EXTENDED: 'displayExtended',
+    PRICE_INDEX: 'priceIndex',
+    PRICE_LIST: 'priceList'
 }
 

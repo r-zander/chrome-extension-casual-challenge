@@ -1,6 +1,10 @@
 import {MAX_BUDGET_POINTS} from "./constants";
 
-const shortPercentageFormat = new Intl.NumberFormat('en-US', {
+const shortPercentageFormatGt100 = new Intl.NumberFormat('en-US', {
+    style: 'percent',
+    maximumSignificantDigits: 3,
+});
+const shortPercentageFormatLt100 = new Intl.NumberFormat('en-US', {
     style: 'percent',
     maximumSignificantDigits: 2,
 });
@@ -32,5 +36,9 @@ export function formatBudgetPointsShare(budgetPoints: number) {
  * @param ratio 0.0 to 1.0
  */
 export function formatShortPercentage(ratio: number) {
-    return shortPercentageFormat.format(ratio);
+    // Edge case handling
+    if (ratio > 1.000) {
+        return shortPercentageFormatGt100.format(ratio);
+    }
+    return shortPercentageFormatLt100.format(ratio);
 }
