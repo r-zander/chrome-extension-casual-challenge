@@ -117,6 +117,20 @@
     border-color: #AEAEAE;
 }
 
+.card-grid-item-count.card-grid-item-budget-points {
+    top: auto;
+    bottom: 46%;
+
+    min-width: 42px;
+
+    font-weight: lighter;
+}
+
+.not-legal > .card-grid-item-count.card-grid-item-budget-points {
+    display: none;
+}
+
+
 .card-grid-item-count.card-grid-item-legality {
     left: auto;
     right: 11%;

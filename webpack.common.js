@@ -11,7 +11,6 @@ module.exports = {
         'decklist-content-script': './src/content-script/decklist/index.ts',
         'single-card-content-script': './src/content-script/single-card/index.ts',
         popup: './src/popup.ts',
-        options: './src/options.ts',
     },
     module: {
         rules: [

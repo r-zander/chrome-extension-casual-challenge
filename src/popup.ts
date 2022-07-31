@@ -11,8 +11,15 @@ displayExtendedCheckbox.addEventListener('change', () => {
     syncStorage.set(StorageKeys.DISPLAY_EXTENDED, displayExtendedCheckbox.checked);
 });
 
+document.querySelectorAll('a[href]').forEach((link: HTMLAnchorElement) => {
+    link.addEventListener('click', event => {
+        event.preventDefault();
+        // noinspection JSIgnoredPromiseFromCall
+        chrome.tabs.create({active: true, url: link.href});
+    });
+})
 
-const priceIndexSelect = document.getElementById('priceIndex') as HTMLSelectElement;
+/*const priceIndexSelect = document.getElementById('priceIndex') as HTMLSelectElement;
 if (priceIndexSelect !== null) {
     syncStorage.get<string>(StorageKeys.PRICE_INDEX, 'B')
         .then(priceIndex => {
@@ -35,4 +42,4 @@ if (priceListSelect !== null) {
         // noinspection JSIgnoredPromiseFromCall
         syncStorage.set(StorageKeys.PRICE_LIST, priceListSelect.value);
     });
-}
+}*/

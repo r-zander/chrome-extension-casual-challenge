@@ -10,38 +10,47 @@
 
 <body>
 <div class="container">
-    <form>
-        <div>
-            <input type="checkbox" id="displayExtended"/>
-            <label for="displayExtended">
-                Display "Extended" bans
-            </label>
-        </div>
+    <header>
+        <h1>Scryfall - Casual<br/>Challenge Checker</h1>
+    </header>
+    <main>
+        <form>
+            <div>
+                <input type="checkbox" id="displayExtended"/>
+                <label for="displayExtended">
+                    Display "Extended" bans
+                </label>
+                <span class="help">Please reload Scryfall tabs afterwards</span>
+            </div>
 
-        <div>
-            <select id="priceList">
-                <option value="old">Old</option>
-                <option value="04">20220401-20220731</option>
-                <option value="05">20220501-20220731</option>
-                <option value="06">20220601-20220731</option>
-            </select>
-            <label for="priceList">
-                Price List
-            </label>
-        </div>
+           <!-- <div>
+                <select id="priceList">
+                    <option value="old">Old</option>
+                    <option value="04">20220401-20220731</option>
+                    <option value="05">20220501-20220731</option>
+                    <option value="06">20220601-20220731</option>
+                </select>
+                <label for="priceList">
+                    Price List
+                </label>
+            </div>
 
-        <div>
-            <select id="priceIndex">
-                <option value="A">A - cheapestPrintAverage</option>
-                <option value="B">B - cheapestPerDayAverage</option>
-            </select>
-            <label for="priceIndex">
-                Price Index
-            </label>
-        </div>
-    </form>
+            <div>
+                <select id="priceIndex">
+                    <option value="A">A - cheapestPrintAverage</option>
+                    <option value="B">B - cheapestPerDayAverage</option>
+                </select>
+                <label for="priceIndex">
+                    Price Index
+                </label>
+            </div>-->
+        </form>
+    </main>
+    <footer>
+        <a href="https://scryfall.com/account/decks">Scryfall</a>
+        <a href="https://sites.google.com/view/a5magicdivision/casual-challenge">Casual Challenge</a>
+    </footer>
 </div>
-
 <script src="popup.js"></script>
 </body>
 </html>

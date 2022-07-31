@@ -4,11 +4,12 @@ import {localStorage, StorageKeys, syncStorage} from "../../common/storage";
 import {deserialize} from "../../common/serialization";
 import {SerializableMap} from "../../common/SerializableMap";
 import {DeckStatistics} from "./DeckStatistics";
-import {formatBudgetPoints, formatBudgetPointsShare} from "../../common/formatting";
-import {MAX_BUDGET_POINTS} from "../../common/constants";
+import {formatBudgetPoints} from "../../common/formatting";
+import {Sidebar} from "./Sidebar";
+import {SearchControls} from "./SearchControls";
+import {CheckMode, MetaBar} from "./types";
 
 
-type CheckMode = ('disabled' | 'overlay');
 type LoadableCards = Map<ScryfallUUID, HTMLElement[]>;
 
 // 7 days aka 1 week (mostly)
@@ -20,17 +21,13 @@ const CONTENT_MODE_DECK_LIST = 'decklist';
 const CONTENT_MODE_DECK_VISUAL = 'visual';
 const CONTENT_MODE_SEARCH_IMAGES = 'search_images';
 
-let loadingIndicator: HTMLElement,
-    disabledButton: HTMLElement,
-    enabledButton: HTMLElement;
 let contentMode = CONTENT_MODE_UNKNOWN;
 let displayExtended: boolean = false;
 let contentWasChecked = false;
 let deckStatistics: DeckStatistics;
-const sidebarClasses = {
-    BUDGET_POINT_SUM: 'budget-point-sum',
-    BUDGET_POINT_SHARE: 'budget-point-share',
-}
+let metaBar: MetaBar;
+let sidebar: Sidebar;
+let searchControls: SearchControls;
 
 // TODO refactor into interface and 1 implementation per content mode
 
@@ -74,67 +71,25 @@ async function isCasualChallengeDeck() {
 }
 
 function initSidebar() {
-    const sidebarTemplate = document.createElement('template');
-    const maxBP = formatBudgetPoints(MAX_BUDGET_POINTS);
-    sidebarTemplate.innerHTML = `
-    <div class="sidebar-toolbox casual-challenge">
-         <h2 class="sidebar-header">Casual Challenge</h2>
-         <span class="sidebar-prices-price">
-            <span class="currency-eur">Budget Points</span>
-            <span class="currency-eur ${sidebarClasses.BUDGET_POINT_SUM}"></span>
-         </span>
-         <span class="sidebar-prices-price">
-            <span class="currency-usd">% of ${maxBP}</span>
-            <span class="currency-usd ${sidebarClasses.BUDGET_POINT_SHARE}"></span>
-         </span>
-         <div class="casual-challenge-checks-loading button-n tiny"><div class="dot-flashing"></div></div>
-         <button class="casual-challenge-checks-disabled button-n tiny hidden">Enable checks</button>
-         <button class="casual-challenge-checks-enabled button-n primary tiny hidden">Disable checks</button>
-    </div>`;
+    sidebar = new Sidebar();
+    sidebar.init();
 
-    // The sidebar already is set to display 'loading', no need to adjust the mode
-    document.querySelector('.sidebar-prices').after(sidebarTemplate.content);
+    sidebar.addDisabledButtonClickHandler(enableChecks);
+    sidebar.addEnabledButtonClickHandler(disableChecks);
 
-    loadingIndicator = document.querySelector('.casual-challenge-checks-loading');
-    disabledButton = document.querySelector('.casual-challenge-checks-disabled');
-    enabledButton = document.querySelector('.casual-challenge-checks-enabled');
-
-    disabledButton.addEventListener('click', () => {
-        enableChecks();
-    });
-    enabledButton.addEventListener('click', () => {
-        disableChecks();
-    });
+    metaBar = sidebar;
 }
 
 function initSearchControls(searchCheckMode: CheckMode) {
-    const searchControlTemplate = document.createElement('template');
-    searchControlTemplate.innerHTML = `
-    <div class="search-controls-casual-challenge">
-         <div class="casual-challenge-checks-loading button-n tiny"><div class="dot-flashing"></div></div>
-         <select id="check" title="Change how cards are checked for Casual Challenge" class="select-n">
-            <option ` + (searchCheckMode === 'disabled' ? 'selected="selected" ' : '') + `value="disabled">Disable</option>
-            <option ` + (searchCheckMode === 'overlay' ? 'selected="selected" ' : '') + `value="overlay">Overlay</option>
-        </select>
-         <label for="order">checks</label>
-    </div>`;
+    searchControls = new SearchControls(searchCheckMode);
+    searchControls.init();
 
-    document.querySelector('.search-controls-inner > .search-controls-display-options').after(searchControlTemplate.content);
+    searchControls.setOnDisabledHandler(disableChecks);
+    searchControls.setOnOverlayHandler(enableChecks);
 
-    const checkModeSelect = document.getElementById('check') as HTMLInputElement;
-    checkModeSelect.addEventListener('change', () => {
-        switch (checkModeSelect.value) {
-            case 'disabled':
-                disableChecks();
-                break;
-            case 'overlay':
-                enableChecks();
-                break;
-        }
-    })
+    searchControls.hideLoadingIndicator();
 
-    loadingIndicator = document.querySelector('.casual-challenge-checks-loading');
-    loadingIndicator.classList.add('hidden');
+    metaBar = searchControls;
 }
 
 function addGlobalClass(cssClass: string) {
@@ -169,6 +124,9 @@ async function init() {
                 displayDisabled();
                 return;
             }
+
+            deckStatistics = new DeckStatistics();
+
             break;
         case CONTENT_MODE_SEARCH_IMAGES: {
             const searchCheckMode = await syncStorage.get<CheckMode>(StorageKeys.SEARCH_CHECK_MODE, 'disabled');
@@ -184,6 +142,9 @@ async function init() {
                     displayDisabled();
                     return;
             }
+
+            deckStatistics = new DeckStatistics();
+
             break;
         }
         case CONTENT_MODE_UNKNOWN:
@@ -412,14 +373,10 @@ function checkDeck() {
                             `<span class="currency-eur">${formattedBP}</span>`
                     });
 
-                    document.querySelector('.' + sidebarClasses.BUDGET_POINT_SUM).innerHTML
-                        = formatBudgetPoints(deckStatistics.budgetPoints);
-                    document.querySelector('.' + sidebarClasses.BUDGET_POINT_SHARE).textContent
-                        = formatBudgetPointsShare(deckStatistics.budgetPoints);
+                    sidebar.renderDeckStatistics(deckStatistics);
 
                     break;
                 case CONTENT_MODE_DECK_VISUAL:
-                case CONTENT_MODE_SEARCH_IMAGES:
                     document.querySelectorAll('.card-grid-item').forEach((deckListEntry: HTMLElement) => {
                         if (deckListEntry.classList.contains('flexbox-spacer')) {
                             return;
@@ -427,6 +384,10 @@ function checkDeck() {
 
                         const cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').textContent;
                         const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
+                        const cardCountText = deckListEntry.querySelector('.card-grid-item-count').textContent;
+                        const cardCount = parseInt(cardCountText.replace(/[^\d]/g, ''));
+                        const cardInfo = getCardInfo(cardsInfo, cardName);
+                        deckStatistics.addEntry(cardName, cardInfo, cardCount);
                         addLegalityElement(
                             cardsInfo,
                             cardName,
@@ -437,7 +398,35 @@ function checkDeck() {
                             cardsToLoad,
                             deckListEntry,
                         );
+                        const formattedBP = formatBudgetPoints(cardInfo.budgetPoints * cardCount);
+                        cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP}BP</span>`)
                     });
+
+                    sidebar.renderDeckStatistics(deckStatistics);
+                    break;
+                case CONTENT_MODE_SEARCH_IMAGES:
+                    document.querySelectorAll('.card-grid-item').forEach((deckListEntry: HTMLElement) => {
+                        if (deckListEntry.classList.contains('flexbox-spacer')) {
+                            return;
+                        }
+
+                        const cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').textContent;
+                        const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
+                        const cardInfo = getCardInfo(cardsInfo, cardName);
+                        addLegalityElement(
+                            cardsInfo,
+                            cardName,
+                            cardItem,
+                            bannedTemplate,
+                            extendedTemplate,
+                            loadingTemplate,
+                            cardsToLoad,
+                            deckListEntry,
+                        );
+                        const formattedBP = formatBudgetPoints(cardInfo.budgetPoints);
+                        cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP}BP</span>`)
+                    });
+
                     break;
             }
 
@@ -684,9 +673,7 @@ function displayLoading() {
             return;
     }
 
-    loadingIndicator.classList.remove('hidden');
-    disabledButton.classList.add('hidden');
-    enabledButton.classList.add('hidden');
+    metaBar.displayLoading();
 }
 
 function displayEnabled() {
@@ -697,9 +684,7 @@ function displayEnabled() {
             return;
     }
 
-    loadingIndicator.classList.add('hidden');
-    disabledButton.classList.add('hidden');
-    enabledButton.classList.remove('hidden');
+    metaBar.displayEnabled();
 }
 
 function displayDisabled() {
@@ -710,9 +695,7 @@ function displayDisabled() {
             return;
     }
 
-    if (typeof loadingIndicator !== 'undefined') loadingIndicator.classList.add('hidden');
-    if (typeof disabledButton !== 'undefined') disabledButton.classList.remove('hidden');
-    if (typeof enabledButton !== 'undefined') enabledButton.classList.add('hidden');
+    metaBar.displayDisabled();
 }
 
 function storeCheckFlag(newValue: CheckMode) {
@@ -734,8 +717,6 @@ function storeCheckFlag(newValue: CheckMode) {
             // Not a deck --> nothing to do
             return Promise.resolve();
     }
-
-
 }
 
 function enableChecks() {
@@ -772,13 +753,13 @@ function disableChecks() {
                             `.card-grid-item-card > .legality-overlay,
                             .card-grid-item-card > .card-grid-item-legality`;
                         break;
-                    // Intended Fallthrough
                     case CONTENT_MODE_SEARCH_IMAGES:
                         removeGlobalClass('mode-search-images-overlay');
                         addGlobalClass('mode-search-images-disabled');
                         elementsToHideSelector =
                             `.card-grid-item-card > .legality-overlay,
-                            .card-grid-item-card > .card-grid-item-legality`;
+                            .card-grid-item-card > .card-grid-item-legality,
+                            .card-grid-item-card > .card-grid-item-budget-points`;
                         break;
                 }
 
