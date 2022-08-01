@@ -81,10 +81,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
 chrome.runtime.onInstalled.addListener(
     (details) => {
-        if (['0.1.0', '0.2.0', '0.2.1', '0.3.0', '0.4.0'].includes(details.previousVersion)) {
+        if (['0.1.0', '0.2.0', '0.2.1', '0.3.0', '0.4.0', '0.5.0', '0.5.1', '0.5.2', '0.5.3'].includes(details.previousVersion)) {
             // Remove old untyped storage items
             // noinspection JSIgnoredPromiseFromCall
-            chrome.storage.sync.remove([StorageKeys.ENABLED_DECKS, StorageKeys.CARD_CACHE]);
+            chrome.storage.sync.remove(StorageKeys.ENABLED_DECKS);
+            // noinspection JSIgnoredPromiseFromCall
+            chrome.storage.local.remove(StorageKeys.CARD_CACHE);
         }
     }
 )
