@@ -12,9 +12,6 @@ import {CheckMode, MetaBar} from "./types";
 
 type LoadableCards = Map<ScryfallUUID, HTMLElement[]>;
 
-// 7 days aka 1 week (mostly)
-const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
-
 const CONTENT_MODE_UNKNOWN = 'unknown';
 
 const CONTENT_MODE_DECK_LIST = 'decklist';
@@ -569,105 +566,7 @@ function isBannedInAnyFormat(cardObject: Card) {
 }
 
 function loadCardsThroughCache(cardIdsToLoad: ScryfallUUID[]) {
-    const loadedCards: Card[] = [];
-    const remainingIds: string[] = [];
-    let cardCache: Map<ScryfallUUID, Card>;
-    // Keep a reference in case we need to clear the cache
-    let apiLoadedCards: Card[];
 
-    return localStorage.get<Map<ScryfallUUID, Card>>(StorageKeys.CARD_CACHE)
-        .then(cardCacheFromStorage => {
-            const now = Date.now();
-
-            if (cardCacheFromStorage === null) {
-                // AddAll cardIdsToLoad to remainingIds
-                Array.prototype.push.apply(remainingIds, cardIdsToLoad);
-                // Create new cache object
-                cardCache = new SerializableMap<ScryfallUUID, Card>();
-            } else {
-                cardCache = cardCacheFromStorage;
-
-                // Each card id either ends up either in the loadedCards (because
-                // it was found fresh in cache.
-                // Or in the remainingIds to be loaded in the next step.
-                cardIdsToLoad.forEach(cardId => {
-                    if (!cardCache.has(cardId)) {
-                        // Not found in cache --> load
-                        remainingIds.push(cardId);
-                        return;
-                    }
-
-                    const cardObject = cardCache.get(cardId);
-                    if ((now - cardObject.cachedAt) < CACHE_DURATION) {
-                        loadedCards.push(cardObject);
-                    } else {
-                        // Stale entry --> remove & reload
-                        console.log('Data was stale.');
-                        cardCache.delete(cardId);
-                        remainingIds.push(cardId);
-                    }
-                });
-
-                if (remainingIds.length === 0) {
-                    return Promise.resolve(loadedCards);
-                }
-            }
-
-            console.log('About to load ' + remainingIds.length + ' cards via API', remainingIds);
-            const identifiersToLoad = remainingIds.map(cardId => {
-                return {id: cardId};
-            });
-
-            return fetch('https://api.scryfall.com/cards/collection',
-                {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    // TODO support more than 75 cards by paging?
-                    body: '{"identifiers": ' + JSON.stringify(identifiersToLoad.slice(0, 75)) + ' }',
-                },
-            )
-                .then(response => response.json())
-                // TODO handle not found
-                .then(collection => collection.data)
-                .then(fromApi => {
-                    console.log('Loaded ' + fromApi.length + ' cards via API', fromApi);
-                    fromApi.forEach((cardObject: Card) => {
-                        cardObject.cachedAt = now;
-                        cardCache.set(cardObject.id, cardObject);
-                    });
-
-                    apiLoadedCards = fromApi;
-
-                    return loadedCards.concat(fromApi);
-                });
-        })
-        .then(loadedCards => {
-            // Store modified cache object
-            return localStorage.set(StorageKeys.CARD_CACHE, cardCache)
-                // Pass loadedCards outside
-                .then(() => {
-                    return loadedCards
-                })
-                .catch((error) => {
-                    if (error.toString() === 'Error: QUOTA_BYTES quota exceeded') {
-                        console.log('Cleaning out old cards from cache.')
-                        // Cache got too big --> delete it, and just store the newest batch of cards
-                        return chrome.storage.local.remove(StorageKeys.CARD_CACHE)
-                            .then(() => {
-                                cardCache = new SerializableMap<ScryfallUUID, Card>();
-                                apiLoadedCards.forEach(cardObject => {
-                                    cardCache.set(cardObject.id, cardObject);
-                                });
-
-                                return localStorage.set(StorageKeys.CARD_CACHE, cardCache)
-                            })
-                            .then(() => {
-                                return loadedCards;
-                            })
-                    }
-                    console.error('Unknown error while writing card cache', error);
-                });
-        });
 }
 
 function displayLoading() {
