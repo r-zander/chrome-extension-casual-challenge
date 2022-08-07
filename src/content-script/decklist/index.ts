@@ -155,7 +155,6 @@ async function init() {
 
     // TODO automatically adjust display when the value changes
     displayExtended = await syncStorage.get(StorageKeys.DISPLAY_EXTENDED, false);
-    console.log('DisplayExtended?', displayExtended);
 
     // Deck title contains 'Casual Challenge' so we can start.
     await checkDeck();
@@ -333,8 +332,10 @@ function checkDeck() {
                     return;
                 }
 
-                const cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').textContent;
-                cardNames.push(cardName);
+                // i18n support - there might be 2 card names, one localized and one english
+                deckListEntry.querySelectorAll('.card-grid-item-invisible-label').forEach(nameElement => {
+                    cardNames.push(nameElement.textContent);
+                });
             });
             break;
     }
@@ -382,24 +383,28 @@ function checkDeck() {
                             return;
                         }
 
-                        const cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').textContent;
-                        const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
-                        const cardCountText = deckListEntry.querySelector('.card-grid-item-count').textContent;
-                        const cardCount = parseInt(cardCountText.replace(/[^\d]/g, ''));
-                        const cardInfo = getCardInfo(cardsInfo, cardName);
-                        deckStatistics.addEntry(cardName, cardInfo, cardCount);
-                        addLegalityElement(
-                            cardsInfo,
-                            cardName,
-                            cardItem,
-                            bannedTemplate,
-                            extendedTemplate,
-                            loadingTemplate,
-                            cardsToLoad,
-                            deckListEntry,
-                        );
-                        const formattedBP = formatBudgetPoints(cardInfo.budgetPoints * cardCount);
-                        cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP}BP</span>`)
+                        deckListEntry.querySelectorAll('.card-grid-item-invisible-label').forEach(nameElement => {
+                            const cardName = nameElement.textContent;
+                            const cardInfo = getCardInfo(cardsInfo, cardName);
+                            if (cardInfo.banStatus === 'unknown') return;
+
+                            const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
+                            const cardCountText = deckListEntry.querySelector('.card-grid-item-count').textContent;
+                            const cardCount = parseInt(cardCountText.replace(/[^\d]/g, ''));
+                            deckStatistics.addEntry(cardName, cardInfo, cardCount);
+                            addLegalityElement(
+                                cardsInfo,
+                                cardName,
+                                cardItem,
+                                bannedTemplate,
+                                extendedTemplate,
+                                loadingTemplate,
+                                cardsToLoad,
+                                deckListEntry,
+                            );
+                            const formattedBP = formatBudgetPoints(cardInfo.budgetPoints * cardCount);
+                            cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`);
+                        });
                     });
 
                     sidebar.renderDeckStatistics(deckStatistics);
@@ -424,7 +429,7 @@ function checkDeck() {
                             deckListEntry,
                         );
                         const formattedBP = formatBudgetPoints(cardInfo.budgetPoints);
-                        cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP}BP</span>`)
+                        cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`)
                     });
 
                     break;

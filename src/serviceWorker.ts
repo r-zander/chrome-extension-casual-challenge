@@ -150,7 +150,12 @@ function sendCardInfo(cardName: string, sendResponse: (response: SingleCardRespo
 }
 
 function getCardInfo(cardName: string): SingleCardResponse {
-    const price = budgetPoints.get(cardName); // No partial check for budget points, they always have the full name
+    let price: number;
+    if (budgetPoints.has(cardName)) {
+        price = budgetPoints.get(cardName); // No partial check for budget points, they always have the full name
+    } else {
+        return {banStatus: 'unknown', banFormats: null, budgetPoints: Number.NaN};
+    }
     const partialName = cardName.split('//')[0].trim();
     if (bans.has(cardName)) {
         return {banStatus: 'banned', banFormats: bans.get(cardName), budgetPoints: price};

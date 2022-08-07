@@ -124,6 +124,8 @@
     min-width: 42px;
 
     font-weight: lighter;
+    text-transform: lowercase;
+    font-variant: small-caps;
 }
 
 .not-legal > .card-grid-item-count.card-grid-item-budget-points {
