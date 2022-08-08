@@ -415,21 +415,25 @@ function checkDeck() {
                             return;
                         }
 
-                        const cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').textContent;
-                        const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
-                        const cardInfo = getCardInfo(cardsInfo, cardName);
-                        addLegalityElement(
-                            cardsInfo,
-                            cardName,
-                            cardItem,
-                            bannedTemplate,
-                            extendedTemplate,
-                            loadingTemplate,
-                            cardsToLoad,
-                            deckListEntry,
-                        );
-                        const formattedBP = formatBudgetPoints(cardInfo.budgetPoints);
-                        cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`)
+                        deckListEntry.querySelectorAll('.card-grid-item-invisible-label').forEach(nameElement => {
+                            const cardName = nameElement.textContent;
+                            const cardInfo = getCardInfo(cardsInfo, cardName);
+                            if (cardInfo.banStatus === 'unknown') return;
+
+                            const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
+                            addLegalityElement(
+                                cardsInfo,
+                                cardName,
+                                cardItem,
+                                bannedTemplate,
+                                extendedTemplate,
+                                loadingTemplate,
+                                cardsToLoad,
+                                deckListEntry,
+                            );
+                            const formattedBP = formatBudgetPoints(cardInfo.budgetPoints);
+                            cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`);
+                        });
                     });
 
                     break;
