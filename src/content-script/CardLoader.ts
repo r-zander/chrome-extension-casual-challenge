@@ -124,33 +124,4 @@ export class CardLoader {
     }
 }
 
-class CachedCard {
-    public readonly id: ScryfallUUID;
-    public readonly name: string;
-    public readonly legalities: {
-        standard: CardLegality,
-        pioneer: CardLegality,
-        modern: CardLegality,
-        legacy: CardLegality,
-        vintage: CardLegality,
-        pauper: CardLegality,
-    };
-    public readonly cachedAt: number;
-    public readonly layout: keyof typeof Layout;
 
-    public constructor(cardFromApi: ScryfallCard, cachedAt: number) {
-        this.id = cardFromApi.id;
-        this.name = cardFromApi.name;
-        this.legalities = {
-            standard: cardFromApi.legalities.standard,
-            pioneer: cardFromApi.legalities.pioneer,
-            modern: cardFromApi.legalities.modern,
-            legacy: cardFromApi.legalities.legacy,
-            vintage: cardFromApi.legalities.vintage,
-            pauper: cardFromApi.legalities.pauper,
-        };
-        this.cachedAt = cachedAt;
-        this.layout = cardFromApi.layout;
-    }
-
-}
