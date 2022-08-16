@@ -29,7 +29,7 @@ type PaperLegalities = {
     pauper: CardLegality,
 };
 
-class CachedScryfallCard {
+export class CachedScryfallCard {
     public readonly id: ScryfallUUID;
     public readonly name: string;
     public readonly legalities: PaperLegalities;
