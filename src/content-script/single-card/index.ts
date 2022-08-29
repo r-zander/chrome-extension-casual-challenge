@@ -1,31 +1,23 @@
 import '../../../styles/single-card-content.css';
-import {BanFormats, Legalities, SingleCardResponse} from "../../common/types";
-import {deserialize} from "../../common/serialization";
 import {formatBudgetPoints, formatBudgetPointsShare} from "../../common/formatting";
 import {StorageKeys, syncStorage} from "../../common/storage";
+import {CardLoader} from "../CardLoader";
+import {Format} from "scryfall-api";
+import {PaperLegalities} from "../../common/card-representations";
 
 let displayExtended: boolean = false;
 
 async function init(): Promise<void> {
-    const cardNameElement: HTMLElement = document.querySelector('head > meta[property="og:title"]');
-    const cardName = cardNameElement.getAttribute('content').trim();
+    const cardIdElement: HTMLElement = document.querySelector('head > meta[name="scryfall:card:id"]');
+    const cardId = cardIdElement.getAttribute('content').trim();
 
     displayExtended = await syncStorage.get(StorageKeys.DISPLAY_EXTENDED, false);
-    console.log('DisplayExtended?', displayExtended);
 
-    chrome.runtime.sendMessage(
-        {action: 'get/card/info', cardName: cardName},
-        (response) => {
-            if (chrome.runtime.lastError) {
-                console.error('Error while fetching ban status.', chrome.runtime.lastError);
-                return;
-            }
+    const cardLoader = new CardLoader();
+    const fullCard = await cardLoader.loadSingle(cardId)
 
-            const cardInfo: SingleCardResponse = deserialize(response)
-
-            displayLegality(cardInfo.banStatus, cardInfo.banFormats);
-            displayBudgetPoints(cardInfo.budgetPoints);
-        });
+    displayLegality(fullCard.banStatus, fullCard.banFormats, fullCard.legalities);
+    displayBudgetPoints(fullCard.budgetPoints);
 }
 
 function displayBudgetPoints(budgetPoints: number) {
@@ -66,18 +58,8 @@ function displayBudgetPoints(budgetPoints: number) {
     lastPrintTable.insertAdjacentHTML('afterend', html);
 }
 
-function displayLegality(banStatus: string, banFormats: BanFormats): void {
-    const legalities: Legalities = {};
-    // let vintageLegality;
-    document.querySelectorAll('.card-legality-item > dt').forEach((formatElement: HTMLElement) => {
-        // if (formatElement.innerText.trim() === 'Vintage') {
-        //     vintageLegality = formatElement.nextElementSibling.classList.item(0);
-        // }
-
-        legalities[formatElement.innerText.trim()] = formatElement.nextElementSibling.classList.item(0);
-    });
-
-    if (legalities['Vintage'] !== 'legal') {
+function displayLegality(banStatus: string, banFormats: Map<keyof typeof Format, number>, legalities: PaperLegalities): void {
+    if (legalities.vintage !== 'legal') {
         appendLegalityElement('not-legal', 'Not Legal',
             'This card is not fully legal in Vintage.');
     } else if (banStatus === 'banned') {
@@ -85,7 +67,6 @@ function displayLegality(banStatus: string, banFormats: BanFormats): void {
             'Played in ' + formatsToString(banFormats) + ' competitive decks');
     } else {
         const bannedInFormats = bannedFormats(legalities);
-        console.log('DisplayExtended?', displayExtended);
 
         if (bannedInFormats.length > 0) {
             appendLegalityElement('banned', 'Banned',
@@ -109,18 +90,31 @@ function displayLegality(banStatus: string, banFormats: BanFormats): void {
 /**
  * Only looks at Casual Challenge relevant formats.
  */
-function bannedFormats(legalities: Legalities): string[] {
+function bannedFormats(legalities: PaperLegalities): string[] {
     const bannedInFormats: string[] = [];
-    ['Standard', 'Pioneer', 'Modern', 'Legacy', 'Vintage', 'Pauper'].forEach(format => {
-        if (legalities[format] === 'banned') {
-            bannedInFormats.push(format);
-        }
-    });
+    if (legalities.standard === 'banned') {
+        bannedInFormats.push('Standard');
+    }
+    if (legalities.pioneer === 'banned') {
+        bannedInFormats.push('Pioneer');
+    }
+    if (legalities.modern === 'banned') {
+        bannedInFormats.push('Modern');
+    }
+    if (legalities.legacy === 'banned') {
+        bannedInFormats.push('Legacy');
+    }
+    if (legalities.vintage === 'banned') {
+        bannedInFormats.push('Vintage');
+    }
+    if (legalities.pauper === 'banned') {
+        bannedInFormats.push('Pauper');
+    }
 
     return bannedInFormats;
 }
 
-function formatsToString(formats: BanFormats): string {
+function formatsToString(formats: Map<keyof typeof Format, number>): string {
     let result = '';
     for (const [format, deckPercentage] of Object.entries(formats)) {
         if (result.length > 0) {

@@ -1,3 +1,5 @@
+import {Layout} from "scryfall-api/dist/declarations/dist/src/types/Layout";
+
 export interface SingleBanResponse {
     banStatus: string,
     formats: BanFormats
@@ -45,10 +47,13 @@ export interface Card {
         legacy: CardLegality,
         vintage: CardLegality,
         pauper: CardLegality,
+        casualChallenge: CasualCardLegality,
     },
     cachedAt: number,
+    layout: keyof typeof Layout,
 }
 
-export type CardLegality = ('banned' | 'legal');
+export type CardLegality = ('banned' | 'legal' | 'not_legal' | 'restricted' | 'UNKNOWN');
+export type CasualCardLegality = (CardLegality | 'extended');
 
 export type ScryfallUUID = string;
