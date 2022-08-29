@@ -20,7 +20,7 @@ export class CasualChallengeCard {
 
 export type ScryfallCard = Card;
 
-type PaperLegalities = {
+export type PaperLegalities = {
     standard: CardLegality,
     pioneer: CardLegality,
     modern: CardLegality,

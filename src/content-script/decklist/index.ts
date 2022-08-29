@@ -1,19 +1,16 @@
 import '../../../styles/decklist-content.css';
-import {Card, MultiCardsResponse, ScryfallUUID, SingleCardResponse} from "../../common/types";
-import {localStorage, StorageKeys, syncStorage} from "../../common/storage";
-import {deserialize} from "../../common/serialization";
+import {StorageKeys, syncStorage} from "../../common/storage";
 import {SerializableMap} from "../../common/SerializableMap";
 import {DeckStatistics} from "./DeckStatistics";
 import {formatBudgetPoints} from "../../common/formatting";
 import {Sidebar} from "./Sidebar";
 import {SearchControls} from "./SearchControls";
 import {CheckMode, MetaBar} from "./types";
+import {CardLoader} from "../CardLoader";
+import {FullCard} from "../../common/card-representations";
 
-
-type LoadableCards = Map<ScryfallUUID, HTMLElement[]>;
 
 const CONTENT_MODE_UNKNOWN = 'unknown';
-
 const CONTENT_MODE_DECK_LIST = 'decklist';
 const CONTENT_MODE_DECK_VISUAL = 'visual';
 const CONTENT_MODE_SEARCH_IMAGES = 'search_images';
@@ -153,7 +150,6 @@ async function init() {
     // TODO automatically adjust display when the value changes
     displayExtended = await syncStorage.get(StorageKeys.DISPLAY_EXTENDED, false);
 
-    // Deck title contains 'Casual Challenge' so we can start.
     await checkDeck();
 }
 
@@ -182,70 +178,6 @@ function detectContentMode() {
 
     return CONTENT_MODE_UNKNOWN;
 }
-
-function getCardInfo(cardsInfo: MultiCardsResponse, cardName: string): SingleCardResponse {
-    if (cardsInfo.has(cardName)) {
-        return cardsInfo.get(cardName);
-    }
-
-    cardName = cardName.split('//')[0].trim();
-    if (!cardsInfo.has(cardName)) {
-        console.error('Cant find cardName or partial in cardsInfo.', cardName);
-        return {banStatus: 'unknown', banFormats: {}, budgetPoints: Number.NaN};
-    }
-    return cardsInfo.get(cardName);
-}
-
-function isCardInBanStatus(cardsInfo: MultiCardsResponse, cardName: string, banStatus: string) {
-    return getCardInfo(cardsInfo, cardName).banStatus === banStatus;
-}
-
-function isBanned(cardsInfo: MultiCardsResponse, cardName: string) {
-    return isCardInBanStatus(cardsInfo, cardName, 'banned');
-}
-
-function isExtendedBanned(cardsInfo: MultiCardsResponse, cardName: string) {
-    if (displayExtended) {
-        return isCardInBanStatus(cardsInfo, cardName, 'extended');
-    }
-
-    return false;
-}
-
-function addLegalityElement(
-    cardsInfo: MultiCardsResponse,
-    cardName: string,
-    cardItem: HTMLElement,
-    bannedTemplate: HTMLTemplateElement,
-    extendedTemplate: HTMLTemplateElement,
-    loadingTemplate: HTMLTemplateElement,
-    cardsToLoad: LoadableCards,
-    deckListEntry: HTMLElement
-) {
-    if (isBanned(cardsInfo, cardName)) {
-        cardItem.append(bannedTemplate.content.cloneNode(true));
-        cardItem.classList.add('banned');
-    } else if (isExtendedBanned(cardsInfo, cardName)) {
-        cardItem.append(extendedTemplate.content.cloneNode(true));
-        cardItem.classList.add('extended');
-    } else {
-        // We need some more infos about the card, so lets queue it for loading
-        cardItem.append(loadingTemplate.content.cloneNode(true));
-        cardItem.classList.add('loading');
-    }
-
-    // Load every card --> make sure that not-legal and (implicitly) banned are correctly shown
-    if (cardsToLoad.has(deckListEntry.dataset.cardId)) {
-        cardsToLoad.get(deckListEntry.dataset.cardId).push(deckListEntry);
-    } else {
-        cardsToLoad.set(deckListEntry.dataset.cardId, [deckListEntry]);
-    }
-}
-
-function getCardName(deckListEntryName: Element): string {
-    return deckListEntryName.childNodes[0].childNodes[0].nodeValue.trim();
-}
-
 
 function checkDeck() {
     switch (contentMode) {
@@ -302,248 +234,155 @@ function checkDeck() {
     const notLegalTemplate = document.createElement('template');
     const bannedTemplate = document.createElement('template');
     const extendedTemplate = document.createElement('template');
-    const futureBannedTemplate = document.createElement('template');
     loadingTemplate.innerHTML = templateFn('loading', '', '<div class="dot-flashing"></div>');
     legalTemplate.innerHTML = templateFn('legal', 'Legal');
     notLegalTemplate.innerHTML = templateFn('not-legal', 'Not Legal');
     bannedTemplate.innerHTML = templateFn('banned', 'Banned');
     extendedTemplate.innerHTML = templateFn('extended', 'Extended');
-    const futureBannedClass = 'banned';
-    futureBannedTemplate.innerHTML = templateFn('banned', 'Banned');
 
-    const cardsToLoad: LoadableCards = new Map<string, HTMLElement[]>();
+    const cardLoader = new CardLoader();
 
-    // TODO solve more elegantly
-    const cardNames: string[] = [];
     switch (contentMode) {
         case CONTENT_MODE_DECK_LIST:
             document.querySelectorAll('.deck-list-entry').forEach((deckListEntry: HTMLElement) => {
-                const cardName = getCardName(deckListEntry.querySelector('.deck-list-entry-name'));
-                cardNames.push(cardName);
+                const cardId = deckListEntry.dataset.cardId;
+                const cardCount = parseInt(deckListEntry.querySelector('.deck-list-entry-count').textContent);
+
+                // We need some more infos about the card, so lets queue it for loading
+                deckListEntry.append(loadingTemplate.content.cloneNode(true));
+                deckListEntry.classList.add('loading');
+
+                cardLoader.register(cardId).then(card => {
+                    deckStatistics.addEntry(card, cardCount);
+                    appendToDeckListEntryRow(
+                        deckListEntry,
+                        card,
+                        legalTemplate,
+                        notLegalTemplate,
+                        bannedTemplate,
+                        extendedTemplate
+                    );
+
+                    const formattedBP = formatBudgetPoints(card.budgetPoints * cardCount);
+                    deckListEntry.querySelector('.deck-list-entry-axial-data').innerHTML =
+                        `<span class="currency-eur">${formattedBP}</span>`
+                });
             });
+
+            sidebar.renderDeckStatistics(deckStatistics);
+
             break;
         case CONTENT_MODE_DECK_VISUAL:
+            document.querySelectorAll('.card-grid-item').forEach((deckListEntry: HTMLElement) => {
+                if (deckListEntry.classList.contains('flexbox-spacer')) {
+                    return;
+                }
+                const cardId = deckListEntry.dataset.cardId;
+                const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
+                const cardCountText = deckListEntry.querySelector('.card-grid-item-count').textContent;
+                const cardCount = parseInt(cardCountText.replace(/[^\d]/g, ''));
+
+                cardItem.append(loadingTemplate.content.cloneNode(true));
+                cardItem.classList.add('loading');
+
+                cardLoader.register(cardId).then(card => {
+                    deckStatistics.addEntry(card, cardCount);
+                    appendToDeckListEntryImage(
+                        deckListEntry,
+                        card,
+                        legalTemplate,
+                        notLegalTemplate,
+                        bannedTemplate,
+                        extendedTemplate
+                    );
+
+                    const formattedBP = formatBudgetPoints(card.budgetPoints * cardCount);
+                    cardItem.insertAdjacentHTML('beforeend',
+                        `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`);
+                });
+            });
+
+            sidebar.renderDeckStatistics(deckStatistics);
+            break;
         case CONTENT_MODE_SEARCH_IMAGES:
             document.querySelectorAll('.card-grid-item').forEach((deckListEntry: HTMLElement) => {
                 if (deckListEntry.classList.contains('flexbox-spacer')) {
                     return;
                 }
 
-                // i18n support - there might be 2 card names, one localized and one english
-                deckListEntry.querySelectorAll('.card-grid-item-invisible-label').forEach(nameElement => {
-                    cardNames.push(nameElement.textContent);
+                const cardId = deckListEntry.dataset.cardId;
+                const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
+
+                cardItem.append(loadingTemplate.content.cloneNode(true));
+                cardItem.classList.add('loading');
+
+                cardLoader.register(cardId).then(card => {
+                    appendToDeckListEntryImage(
+                        deckListEntry,
+                        card,
+                        legalTemplate,
+                        notLegalTemplate,
+                        bannedTemplate,
+                        extendedTemplate
+                    );
+                    const formattedBP = formatBudgetPoints(card.budgetPoints);
+                    cardItem.insertAdjacentHTML('beforeend',
+                        `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`)
                 });
             });
+
             break;
     }
 
-    return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({action: 'get/cards/info', cardNames}, (cardsInfo) => {
-            if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-                return;
-            }
-
-            resolve(cardsInfo);
-        });
-    })
-        .then(deserialize)
-        .then((cardsInfo: MultiCardsResponse) => {
-            switch (contentMode) {
-                case CONTENT_MODE_DECK_LIST:
-                    document.querySelectorAll('.deck-list-entry').forEach((deckListEntry: HTMLElement) => {
-                        const cardCount = parseInt(deckListEntry.querySelector('.deck-list-entry-count').textContent);
-                        const cardName = getCardName(deckListEntry.querySelector('.deck-list-entry-name'));
-                        const cardInfo = getCardInfo(cardsInfo, cardName);
-                        deckStatistics.addEntry(cardName, cardInfo, cardCount);
-                        addLegalityElement(
-                            cardsInfo, // TODO use resolved card info
-                            cardName,
-                            deckListEntry,
-                            bannedTemplate,
-                            extendedTemplate,
-                            loadingTemplate,
-                            cardsToLoad,
-                            deckListEntry,
-                        );
-                        const formattedBP = formatBudgetPoints(cardInfo.budgetPoints * cardCount);
-                        deckListEntry.querySelector('.deck-list-entry-axial-data').innerHTML =
-                            `<span class="currency-eur">${formattedBP}</span>`
-                    });
-
-                    sidebar.renderDeckStatistics(deckStatistics);
-
-                    break;
-                case CONTENT_MODE_DECK_VISUAL:
-                    document.querySelectorAll('.card-grid-item').forEach((deckListEntry: HTMLElement) => {
-                        if (deckListEntry.classList.contains('flexbox-spacer')) {
-                            return;
-                        }
-
-                        deckListEntry.querySelectorAll('.card-grid-item-invisible-label').forEach(nameElement => {
-                            const cardName = nameElement.textContent;
-                            const cardInfo = getCardInfo(cardsInfo, cardName);
-                            if (cardInfo.banStatus === 'unknown') return;
-
-                            const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
-                            const cardCountText = deckListEntry.querySelector('.card-grid-item-count').textContent;
-                            const cardCount = parseInt(cardCountText.replace(/[^\d]/g, ''));
-                            deckStatistics.addEntry(cardName, cardInfo, cardCount);
-                            addLegalityElement(
-                                cardsInfo,
-                                cardName,
-                                cardItem,
-                                bannedTemplate,
-                                extendedTemplate,
-                                loadingTemplate,
-                                cardsToLoad,
-                                deckListEntry,
-                            );
-                            const formattedBP = formatBudgetPoints(cardInfo.budgetPoints * cardCount);
-                            cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`);
-                        });
-                    });
-
-                    sidebar.renderDeckStatistics(deckStatistics);
-                    break;
-                case CONTENT_MODE_SEARCH_IMAGES:
-                    document.querySelectorAll('.card-grid-item').forEach((deckListEntry: HTMLElement) => {
-                        if (deckListEntry.classList.contains('flexbox-spacer')) {
-                            return;
-                        }
-
-                        const cardName = deckListEntry.querySelector('.card-grid-item-invisible-label').textContent;
-                        const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
-                        const cardInfo = getCardInfo(cardsInfo, cardName);
-                        addLegalityElement(
-                            cardsInfo,
-                            cardName,
-                            cardItem,
-                            bannedTemplate,
-                            extendedTemplate,
-                            loadingTemplate,
-                            cardsToLoad,
-                            deckListEntry,
-                        );
-                        const formattedBP = formatBudgetPoints(cardInfo.budgetPoints);
-                        cardItem.insertAdjacentHTML("beforeend", `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`)
-                    });
-
-                    break;
-            }
-
-            if (cardsToLoad.size === 0) {
-                return Promise.resolve();
-            }
-            const cardIdsToLoad = Array.from(cardsToLoad.keys());
-
-            return loadCardsThroughCache(cardIdsToLoad)
-                .then(loadedCards => {
-                    loadedCards.forEach(cardObject => {
-                        const cardId = cardObject.id;
-                        const deckListEntry = cardsToLoad.get(cardId);
-                        let appendToDeckListEntry: typeof appendToDeckListEntryRow;
-                        switch (contentMode) {
-                            case CONTENT_MODE_DECK_LIST:
-                                appendToDeckListEntry = appendToDeckListEntryRow;
-                                break;
-                            case CONTENT_MODE_DECK_VISUAL:
-                            case CONTENT_MODE_SEARCH_IMAGES:
-                                appendToDeckListEntry = appendToDeckListEntryImage;
-                                break;
-                        }
-
-                        if (Array.isArray(deckListEntry)) {
-                            deckListEntry.forEach((entry) => {
-                                appendToDeckListEntry(
-                                    entry,
-                                    cardObject,
-                                    legalTemplate,
-                                    futureBannedTemplate,
-                                    futureBannedClass,
-                                    notLegalTemplate,
-                                    cardsInfo,
-                                    bannedTemplate,
-                                    extendedTemplate);
-                            });
-                        } else {
-                            appendToDeckListEntry(
-                                deckListEntry,
-                                cardObject,
-                                legalTemplate,
-                                futureBannedTemplate,
-                                futureBannedClass,
-                                notLegalTemplate,
-                                cardsInfo,
-                                bannedTemplate,
-                                extendedTemplate);
-                        }
-                    });
-                });
-        })
-        .then(() => {
-            displayEnabled();
-            contentWasChecked = true;
-        });
+    cardLoader.start().then(() => {
+        displayEnabled();
+        contentWasChecked = true;
+    });
 }
 
 function appendToDeckListEntryImage(
     deckListEntry: HTMLElement,
-    cardObject: Card,
+    card: FullCard,
     legalTemplate: HTMLTemplateElement,
-    futureBannedTemplate: HTMLTemplateElement,
-    futureBannedClass: string,
     notLegalTemplate: HTMLTemplateElement,
-    cardsInfo: MultiCardsResponse,
     bannedTemplate: HTMLTemplateElement,
     extendedTemplate: HTMLTemplateElement
 ) {
     deckListEntry.querySelector('.legality-overlay').remove();
     deckListEntry.querySelector('.card-grid-item-legality').remove();
     const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
-    modifyCardItem(cardItem, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
-        notLegalTemplate, cardsInfo, bannedTemplate, extendedTemplate);
+    modifyCardItem(cardItem, card, legalTemplate, notLegalTemplate, bannedTemplate, extendedTemplate);
 }
 
 function appendToDeckListEntryRow(
     deckListEntry: HTMLElement,
-    cardObject: Card,
+    card: FullCard,
     legalTemplate: HTMLTemplateElement,
-    futureBannedTemplate: HTMLTemplateElement,
-    futureBannedClass: string,
     notLegalTemplate: HTMLTemplateElement,
-    cardsInfo: MultiCardsResponse,
     bannedTemplate: HTMLTemplateElement,
     extendedTemplate: HTMLTemplateElement
 ) {
     deckListEntry.querySelector('.card-legality').remove();
-    modifyCardItem(deckListEntry, cardObject, legalTemplate, futureBannedTemplate, futureBannedClass,
-        notLegalTemplate, cardsInfo, bannedTemplate, extendedTemplate)
+    modifyCardItem(deckListEntry, card, legalTemplate, notLegalTemplate, bannedTemplate, extendedTemplate);
 }
 
 function modifyCardItem(
     cardItem: HTMLElement,
-    cardObject: Card,
+    card: FullCard,
     legalTemplate: HTMLTemplateElement,
-    futureBannedTemplate: HTMLTemplateElement,
-    futureBannedClass: string,
     notLegalTemplate: HTMLTemplateElement,
-    cardsInfo: MultiCardsResponse,
     bannedTemplate: HTMLTemplateElement,
     extendedTemplate: HTMLTemplateElement
 ) {
     cardItem.classList.remove('loading');
 
-    if (cardObject.legalities.vintage !== 'legal') {
+    if (card.legalities.vintage !== 'legal') {
         cardItem.append(notLegalTemplate.content.cloneNode(true));
         cardItem.classList.add('not-legal');
-    } else if (isBanned(cardsInfo, cardObject.name)) {
+    } else if (card.banStatus === 'banned' || isBannedInAnyFormat(card)) {
         cardItem.append(bannedTemplate.content.cloneNode(true));
         cardItem.classList.add('banned');
-    } else if (isBannedInAnyFormat(cardObject)) {
-        cardItem.append(futureBannedTemplate.content.cloneNode(true));
-        cardItem.classList.add(futureBannedClass);
-    } else if (isExtendedBanned(cardsInfo, cardObject.name)) {
+    } else if (displayExtended && card.banStatus === 'extended') {
         cardItem.append(extendedTemplate.content.cloneNode(true));
         cardItem.classList.add('extended');
     } else {
@@ -555,18 +394,14 @@ function modifyCardItem(
 /**
  * Only looks at Casual Challenge relevant formats.
  */
-function isBannedInAnyFormat(cardObject: Card) {
-    const legalities = cardObject.legalities;
+function isBannedInAnyFormat(card: FullCard) {
+    const legalities = card.legalities;
     return legalities.standard === 'banned' ||
         legalities.pioneer === 'banned' ||
         legalities.modern === 'banned' ||
         legalities.legacy === 'banned' ||
         legalities.vintage === 'banned' ||
         legalities.pauper === 'banned';
-}
-
-function loadCardsThroughCache(cardIdsToLoad: ScryfallUUID[]) {
-
 }
 
 function displayLoading() {

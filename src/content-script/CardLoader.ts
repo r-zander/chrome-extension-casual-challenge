@@ -4,27 +4,30 @@ import {SerializableMap} from "../common/SerializableMap";
 import {CachedScryfallCard, CasualChallengeCard, FullCard, ScryfallCard} from "../common/card-representations";
 import {deserialize} from "../common/serialization";
 
+const DEBUG_LOG = true;
+
 // 7 days aka 1 week (mostly)
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;
 
-// export interface ScryfallDataLoader {
-//
-// }
-
 export class CardLoader {
 
-    // private readonly scryfallDataLoader: ScryfallDataLoader;
     private readonly loadingPromise: Promise<Map<ScryfallUUID, CachedScryfallCard>>;
     private casualChallengeCardPromise: Promise<Map<ScryfallUUID, CasualChallengeCard>>
     private loadingResolve: (data: Map<ScryfallUUID, CachedScryfallCard>) => void;
     private readonly cardIdsToLoad: ScryfallUUID[] = [];
     private cachedCards: Map<ScryfallUUID, CachedScryfallCard>;
 
-    constructor(/*scryfallDataLoader: ScryfallDataLoader*/) {
-        // this.scryfallDataLoader = scryfallDataLoader;
+    constructor() {
         this.loadingPromise = new Promise<Map<ScryfallUUID, CachedScryfallCard>>((resolve) => {
             this.loadingResolve = resolve;
         });
+    }
+
+    public loadSingle(cardId: ScryfallUUID): Promise<FullCard> {
+        const promise = this.register(cardId);
+        // noinspection JSIgnoredPromiseFromCall
+        this.start();
+        return promise;
     }
 
     public register(cardId: ScryfallUUID): Promise<FullCard> {
@@ -58,9 +61,9 @@ export class CardLoader {
             });
     }
 
-    public start(): void {
+    public start(): Promise<void> {
         let loadingResult: CacheLoadingResult;
-        this.loadViaCache()
+        return this.loadViaCache()
             .then((cacheLoadingResult: CacheLoadingResult) => {
                 loadingResult = cacheLoadingResult;
                 if (cacheLoadingResult.notFound.length === 0) {
@@ -100,22 +103,14 @@ export class CardLoader {
                     cardNames.push(loadedCard.name);
                 });
 
-                this.casualChallengeCardPromise = new Promise<Map<ScryfallUUID, CasualChallengeCard>>((resolve, reject) => {
-                    chrome.runtime.sendMessage({action: 'get/cards/info', cardNames}, (cardsInfo) => {
-                        if (chrome.runtime.lastError) {
-                            reject(chrome.runtime.lastError);
-                            return;
-                        }
-
-                        resolve(cardsInfo);
-                    });
-                })
-                    .then(deserialize<unknown, Map<ScryfallUUID, CasualChallengeCard>>);
-                return this.casualChallengeCardPromise;
+                this.casualChallengeCardPromise = this.loadCasualChallengeInfo(cardNames);
             });
     }
 
     private loadViaCache(): Promise<CacheLoadingResult> {
+        if (DEBUG_LOG) {
+            console.debug(`CardLoader.loadViaCache: ${this.cardIdsToLoad.length} cards`, this.cardIdsToLoad);
+        }
         return localStorage.get<Map<ScryfallUUID, CachedScryfallCard>>(StorageKeys.CARD_CACHE, new SerializableMap<ScryfallUUID, CachedScryfallCard>())
             .then(cardCache => {
                 const remainingIds: ScryfallUUID[] = [];
@@ -137,7 +132,9 @@ export class CardLoader {
                         loadedCards.set(cardId, cardObject);
                     } else {
                         // Stale entry --> remove & reload
-                        console.log('Data was stale.');
+                        if (DEBUG_LOG) {
+                            console.debug(`CardLoader.loadViaCache: cached data was stale for ${cardId}`);
+                        }
                         cardCache.delete(cardId);
                         remainingIds.push(cardId);
                     }
@@ -145,6 +142,10 @@ export class CardLoader {
 
                 this.cachedCards = cardCache;
 
+                if (DEBUG_LOG) {
+                    console.debug(`CardLoader.loadViaCache: found ${loadedCards.size}`, loadedCards);
+                    console.debug(`CardLoader.loadViaCache: not found ${remainingIds.length}`, remainingIds);
+                }
                 return {
                     found: loadedCards,
                     notFound: remainingIds
@@ -153,7 +154,9 @@ export class CardLoader {
     }
 
     private loadViaScryfallAPI(cardIds: ScryfallUUID[]): Promise<ScryfallCard[]> {
-        console.log('About to load ' + cardIds.length + ' cards via API', cardIds);
+        if (DEBUG_LOG) {
+            console.debug(`CardLoader.loadViaScryfallAPI: About to load ${cardIds.length} cards via API`, cardIds);
+        }
         if (cardIds.length > 75) {
             console.warn('Only first 75 cards will be loaded. Please reload the page to load the rest.');
         }
@@ -173,7 +176,9 @@ export class CardLoader {
             // TODO handle not found
             .then(collection => collection.data)
             .then((fromApi: ScryfallCard[]) => {
-                console.log('Loaded ' + fromApi.length + ' cards via API', fromApi);
+                if (DEBUG_LOG) {
+                    console.debug(`CardLoader.loadViaScryfallAPI: Loaded ${fromApi.length} cards via API`, fromApi);
+                }
                 return fromApi;
             });
     }
@@ -182,8 +187,14 @@ export class CardLoader {
         cardsToCache: Map<ScryfallUUID, CachedScryfallCard>,
         loadedCards: Map<ScryfallUUID, CachedScryfallCard>
     ): Promise<void> {
+        if (DEBUG_LOG) {
+            console.debug(`CardLoader.writeToCache: Previous cache contains ${this.cachedCards.size} cards.`);
+        }
         for (const [cardId, cacheReadyCard] of Array.from(cardsToCache)) {
             this.cachedCards.set(cardId, cacheReadyCard);
+        }
+        if (DEBUG_LOG) {
+            console.debug(`CardLoader.writeToCache: New cache contains ${this.cachedCards.size} cards.`);
         }
 
         // Store modified cache object
@@ -203,6 +214,29 @@ export class CardLoader {
                         })
                 }
                 console.error('Unknown error while writing card cache', error);
+            });
+    }
+
+    private loadCasualChallengeInfo(cardNames: string[]) {
+        if (DEBUG_LOG) {
+            console.debug(`CardLoader.loadCasualChallengeInfo: Load ${cardNames.length} cards.`, cardNames);
+        }
+        return new Promise<Map<ScryfallUUID, CasualChallengeCard>>((resolve, reject) => {
+            chrome.runtime.sendMessage({action: 'get/cards/info', cardNames}, (cardsInfo) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+
+                resolve(cardsInfo);
+            });
+        })
+            .then(deserialize<unknown, Map<ScryfallUUID, CasualChallengeCard>>)
+            .then((cardsInfo) => {
+                if (DEBUG_LOG) {
+                    console.debug(`CardLoader.loadCasualChallengeInfo: Got ${cardsInfo.size} cards.`, cardsInfo);
+                }
+                return cardsInfo;
             });
     }
 }

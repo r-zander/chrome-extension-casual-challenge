@@ -1,4 +1,4 @@
-import {SingleCardResponse} from "../../common/types";
+import {FullCard} from "../../common/card-representations";
 
 class DeckEntry {
     public readonly cardName: string;
@@ -33,12 +33,12 @@ export class DeckStatistics {
         return this._banStatus;
     }
 
-    addEntry(cardName: string, cardInfo: SingleCardResponse, cardCount: number) {
-        this.entries.push(new DeckEntry(cardName, cardCount, cardInfo.budgetPoints, cardInfo.banStatus));
+    addEntry(card: FullCard, cardCount: number) {
+        this.entries.push(new DeckEntry(card.name, cardCount, card.budgetPoints, card.banStatus));
         this._cardCount += cardCount;
-        this._budgetPoints += (cardCount * cardInfo.budgetPoints);
-        if (cardInfo.banStatus !== null) {
-            switch (cardInfo.banStatus) {
+        this._budgetPoints += (cardCount * card.budgetPoints);
+        if (card.banStatus !== null) {
+            switch (card.banStatus) {
                 case 'banned':
                     this._banStatus = 'banned';
                     break;
