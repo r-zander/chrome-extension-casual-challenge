@@ -1,12 +1,13 @@
 {
-  "name": "chrome-extension-webpack",
-  "version": "0.2.0",
+  "name": "chrome-extension-casual-challenge",
+  "version": "0.6.0",
   "description": "Get started with Chrome extensions development using webpack, Typescript, Sass, and more",
   "scripts": {
     "start": "webpack --watch --config webpack.dev.js",
     "build": "webpack --config webpack.prod.js",
     "lint": "eslint --ext .ts,.js --max-warnings=0 .",
-    "prettier": "prettier --write"
+    "prettier": "prettier --write",
+    "upload": "chrome-webstore-upload upload --source .\\dist"
   },
   "license": "MIT",
   "devDependencies": {
@@ -18,8 +19,10 @@
     "@typescript-eslint/eslint-plugin": "^5.30.5",
     "@typescript-eslint/parser": "^5.30.5",
     "babel-loader": "^8.2.5",
+    "chrome-webstore-upload-cli": "^2.1.0",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.7.1",
+    "dotenv-run-script": "^0.2.0",
     "dotenv-webpack": "^8.0.0",
     "eslint": "^8.19.0",
     "eslint-config-prettier": "^8.5.0",
