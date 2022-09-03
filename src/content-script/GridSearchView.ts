@@ -86,7 +86,7 @@ export class GridSearchView extends EnhancedView {
                 );
                 const formattedBP = formatBudgetPoints(card.budgetPoints);
                 cardItem.insertAdjacentHTML('beforeend',
-                    `<span class="card-grid-item-count card-grid-item-budget-points">${formattedBP} BP</span>`)
+                    `<span class="card-grid-item-count card-grid-item-budget-points layout-${card.layout}">${formattedBP} BP</span>`)
             });
         });
 

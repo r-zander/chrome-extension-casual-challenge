@@ -1,4 +1,4 @@
-import '../../../styles/decklist-content.css';
+import '../../../styles/decklist-content.scss';
 import {EnhancedView} from "../EnhancedView";
 import {GridSearchView} from "../GridSearchView";
 import {NoopView} from "../NoopView";
