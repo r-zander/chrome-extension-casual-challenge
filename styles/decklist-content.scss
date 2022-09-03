@@ -126,6 +126,15 @@
     font-weight: lighter;
     text-transform: lowercase;
     font-variant: small-caps;
+
+    &.layout-saga {
+        left: 54%;
+        bottom: 18%;
+    }
+
+    &.layout-class {
+        bottom: 18%;
+    }
 }
 
 .not-legal > .card-grid-item-count.card-grid-item-budget-points {
