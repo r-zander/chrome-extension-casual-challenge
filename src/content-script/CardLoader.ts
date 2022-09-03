@@ -15,6 +15,7 @@ export class CardLoader {
     private casualChallengeCardPromise: Promise<Map<ScryfallUUID, CasualChallengeCard>>
     private loadingResolve: (data: Map<ScryfallUUID, CachedScryfallCard>) => void;
     private readonly cardIdsToLoad: ScryfallUUID[] = [];
+    private readonly registeredPromises: Promise<FullCard>[]  = [];
     private cachedCards: Map<ScryfallUUID, CachedScryfallCard>;
 
     constructor() {
@@ -34,7 +35,7 @@ export class CardLoader {
         this.cardIdsToLoad.push(cardId);
 
         let loadedCard: CachedScryfallCard;
-        return this.loadingPromise
+        const fullCardPromise = this.loadingPromise
             .then((loadedCards: Map<ScryfallUUID, CachedScryfallCard>) => {
                 if (!loadedCards.has(cardId)) {
                     console.error('Loaded cards', loadedCards);
@@ -59,11 +60,13 @@ export class CardLoader {
             .then((ccCard: CasualChallengeCard) => {
                 return new FullCard(loadedCard, ccCard);
             });
+        this.registeredPromises.push(fullCardPromise);
+        return fullCardPromise;
     }
 
-    public start(): Promise<void> {
+    public start(): Promise<FullCard[]> {
         let loadingResult: CacheLoadingResult;
-        return this.loadViaCache()
+        this.loadViaCache()
             .then((cacheLoadingResult: CacheLoadingResult) => {
                 loadingResult = cacheLoadingResult;
                 if (cacheLoadingResult.notFound.length === 0) {
@@ -104,7 +107,10 @@ export class CardLoader {
                 });
 
                 this.casualChallengeCardPromise = this.loadCasualChallengeInfo(cardNames);
+                return this.casualChallengeCardPromise;
             });
+
+        return Promise.all(this.registeredPromises);
     }
 
     private loadViaCache(): Promise<CacheLoadingResult> {
