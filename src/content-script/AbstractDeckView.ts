@@ -42,7 +42,7 @@ export abstract class AbstractDeckView extends EnhancedView {
         // Check for matching deck titles for auto-enable
         const deckTitle = (document.querySelector('.deck-details-title') as HTMLElement).innerText;
         if (deckTitle.match(/Casual.{0,3}Challenge/i) !== null ||
-            deckTitle.includes('CC') !== null /* Case-sensitive */) {
+            deckTitle.includes('CC') /* Case-sensitive */) {
             console.log('isCasualChallengeDeck', 'Deck Title matches');
             // Synchronously store that this deck should have its deck check enabled
             // to prevent unexpected behavior when the deck name changes
@@ -50,13 +50,13 @@ export abstract class AbstractDeckView extends EnhancedView {
             return true;
         }
 
-        if (enabledDecks === null) {
-            console.log('isCasualChallengeDeck', 'Unknown deck, just proceed without checks.');
-            return false;
-        } else {
+        if (enabledDecks !== null && (enabledDecks.get(getDeckId()) === 'overlay')) {
             console.log('isCasualChallengeDeck', 'Found deck id in `enabledDecks` storage');
             return true;
         }
+
+        console.log('isCasualChallengeDeck', 'Unknown deck, just proceed without checks.');
+        return false;
     }
 
     protected async storeCheckFlag(newValue: CheckMode): Promise<void> {

@@ -7,7 +7,7 @@ export class NoopView extends EnhancedView {
     }
 
     protected createMetaBar(): MetaBar {
-        return null;
+        return new NoopMetaBar();
     }
 
     public async onInit(): Promise<void> {
@@ -23,10 +23,32 @@ export class NoopView extends EnhancedView {
     }
 
     protected getElementsToHideSelector(): string {
-        return null;
+        return '';
     }
 
     protected onDisableChecks(): void {
+        // Do nothing
+    }
+}
+
+class NoopMetaBar implements MetaBar {
+    init(): void {
+        // Do nothing
+    }
+
+    displayDisabled(): void {
+        // Do nothing
+    }
+
+    displayEnabled(): void {
+        // Do nothing
+    }
+
+    displayLoading(): void {
+        // Do nothing
+    }
+
+    hideLoadingIndicator(): void {
         // Do nothing
     }
 }
