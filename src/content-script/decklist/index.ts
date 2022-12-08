@@ -541,10 +541,10 @@ function modifyCardItem(
 ) {
     cardItem.classList.remove('loading');
 
-    if (cardObject.legalities.vintage !== 'legal') {
+    if (cardObject.legalities.vintage === 'not_legal') {
         cardItem.append(notLegalTemplate.content.cloneNode(true));
         cardItem.classList.add('not-legal');
-    } else if (isBanned(cardsInfo, cardObject.name)) {
+    } else if (cardObject.legalities.vintage === 'restricted' || isBanned(cardsInfo, cardObject.name)) {
         cardItem.append(bannedTemplate.content.cloneNode(true));
         cardItem.classList.add('banned');
     } else if (isBannedInAnyFormat(cardObject)) {

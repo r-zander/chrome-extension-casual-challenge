@@ -77,9 +77,12 @@ function displayLegality(banStatus: string, banFormats: BanFormats): void {
         legalities[formatElement.innerText.trim()] = formatElement.nextElementSibling.classList.item(0);
     });
 
-    if (legalities['Vintage'] !== 'legal') {
+    if (legalities['Vintage'] === 'not-legal') {
         appendLegalityElement('not-legal', 'Not Legal',
-            'This card is not fully legal in Vintage.');
+            'This card is not legal in Vintage.');
+    } else if (legalities['Vintage'] === 'restricted' ){
+        appendLegalityElement('banned', 'Banned',
+            'Restricted in Vintage.');
     } else if (banStatus === 'banned') {
         appendLegalityElement('banned', 'Banned',
             'Played in ' + formatsToString(banFormats) + ' competitive decks');

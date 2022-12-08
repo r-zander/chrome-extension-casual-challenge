@@ -49,6 +49,6 @@ export interface Card {
     cachedAt: number,
 }
 
-export type CardLegality = ('banned' | 'legal');
+export type CardLegality = ('banned' | 'legal' | 'not_legal' | 'restricted');
 
 export type ScryfallUUID = string;
