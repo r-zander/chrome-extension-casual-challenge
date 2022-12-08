@@ -77,10 +77,13 @@ export abstract class EnhancedView {
     ) {
         cardItem.classList.remove('loading');
 
-        if (card.legalities.vintage !== 'legal') {
+        if (card.legalities.vintage === 'not_legal') {
             cardItem.append(notLegalTemplate.content.cloneNode(true));
             cardItem.classList.add('not-legal');
-        } else if (card.banStatus === 'banned' || isBannedInAnyFormat(card)) {
+        } else if (card.banStatus === 'banned'
+            || card.legalities.vintage === 'restricted'
+            || isBannedInAnyFormat(card)
+        ) {
             cardItem.append(bannedTemplate.content.cloneNode(true));
             cardItem.classList.add('banned');
         } else if (this.displayExtended && card.banStatus === 'extended') {

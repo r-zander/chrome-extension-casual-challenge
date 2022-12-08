@@ -59,9 +59,12 @@ function displayBudgetPoints(budgetPoints: number) {
 }
 
 function displayLegality(banStatus: string, banFormats: Map<keyof typeof Format, number>, legalities: PaperLegalities): void {
-    if (legalities.vintage !== 'legal') {
+    if (legalities.vintage === 'not_legal') {
         appendLegalityElement('not-legal', 'Not Legal',
-            'This card is not fully legal in Vintage.');
+            'This card is not legal in Vintage.');
+    } else if (legalities.vintage === 'restricted' ){
+        appendLegalityElement('banned', 'Banned',
+            'Restricted in Vintage.');
     } else if (banStatus === 'banned') {
         appendLegalityElement('banned', 'Banned',
             'Played in ' + formatsToString(banFormats) + ' competitive decks');
