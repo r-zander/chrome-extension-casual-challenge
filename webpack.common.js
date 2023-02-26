@@ -7,10 +7,10 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
     entry: {
-        serviceWorker: './src/serviceWorker.ts',
+        'serviceWorker': './src/serviceWorker.ts',
         'decklist-content-script': './src/content-script/decklist/index.ts',
         'single-card-content-script': './src/content-script/single-card/index.ts',
-        popup: './src/popup.ts',
+        'popup': './src/popup.ts',
     },
     module: {
         rules: [
