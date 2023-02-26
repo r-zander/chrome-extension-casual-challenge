@@ -16,7 +16,7 @@ export class SearchControls implements MetaBar {
         const searchControlTemplate = document.createElement('template');
         searchControlTemplate.innerHTML = `
     <div class="search-controls-casual-challenge">
-         <div class="casual-challenge-checks-loading button-n tiny"><div class="dot-flashing"></div></div>
+         <div class="casual-challenge-checks-loading button-n"><div class="dot-flashing"></div></div>
          <select id="check" title="Change how cards are checked for Casual Challenge" class="select-n">
             <option ` + (initialSearchCheckMode === 'disabled' ? 'selected="selected" ' : '') + `value="disabled">Disable</option>
             <option ` + (initialSearchCheckMode === 'overlay' ? 'selected="selected" ' : '') + `value="overlay">Overlay</option>
@@ -47,11 +47,11 @@ export class SearchControls implements MetaBar {
     }
 
     public setOnDisabledHandler(handler: () => void): void {
-        onDisabled = handler;
+        onDisabled = handler.bind(this);
     }
 
     public setOnOverlayHandler(handler: () => void): void {
-        onOverlay = handler;
+        onOverlay = handler.bind(this);
     }
 
     public displayLoading(): void {

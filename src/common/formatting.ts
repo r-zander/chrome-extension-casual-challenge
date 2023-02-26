@@ -10,6 +10,10 @@ const shortPercentageFormatLt100 = new Intl.NumberFormat('en-US', {
 });
 
 export function formatBudgetPoints(budgetPoints: number) {
+    if (budgetPoints === null) {
+        return 'unknown';
+    }
+
     const str = String(budgetPoints);
 
     let result = '';
@@ -28,6 +32,9 @@ export function formatBudgetPoints(budgetPoints: number) {
 }
 
 export function formatBudgetPointsShare(budgetPoints: number) {
+    if (budgetPoints === null) {
+        return '--';
+    }
     return formatShortPercentage(budgetPoints / MAX_BUDGET_POINTS);
 }
 

@@ -16,7 +16,7 @@ async function init(): Promise<void> {
     const cardLoader = new CardLoader();
     const fullCard = await cardLoader.loadSingle(cardId)
 
-    displayLegality(fullCard.banStatus, fullCard.banFormats, fullCard.legalities);
+    displayLegality(fullCard.banStatus, fullCard.banFormats, fullCard.legalities, fullCard.budgetPoints);
     displayBudgetPoints(fullCard.budgetPoints);
 }
 
@@ -46,23 +46,31 @@ function displayBudgetPoints(budgetPoints: number) {
                 <span style="cursor: inherit;">Budget Points</span>
             </td>
             <td>
-                <span class="currency-eur" style="cursor: inherit;">${formattedBP}</span>
+                <span class="currency-eur" style="cursor: inherit; font-variant: small-caps;">${formattedBP}</span>
             </td>
             <td>
                 <span class="currency-usd" style="cursor: inherit">${formattedPercentage}</span>
             </td>
-        </tr>                                                        
+        </tr>
     </tbody>
 </table>`;
 
     lastPrintTable.insertAdjacentHTML('afterend', html);
 }
 
-function displayLegality(banStatus: string, banFormats: Map<keyof typeof Format, number>, legalities: PaperLegalities): void {
+function displayLegality(
+    banStatus: string,
+    banFormats: Map<keyof typeof Format, number>,
+    legalities: PaperLegalities,
+    budgetPoints: number
+): void {
     if (legalities.vintage === 'not_legal') {
         appendLegalityElement('not-legal', 'Not Legal',
             'This card is not legal in Vintage.');
-    } else if (legalities.vintage === 'restricted' ){
+    } else if (budgetPoints === null || budgetPoints === 0) {
+        appendLegalityElement('not-legal', 'Not Legal',
+            'This card has no valid budget points (yet).');
+    } else if (legalities.vintage === 'restricted') {
         appendLegalityElement('banned', 'Banned',
             'Restricted in Vintage.');
     } else if (banStatus === 'banned') {

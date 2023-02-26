@@ -1,6 +1,7 @@
 import {CheckMode, MetaBar} from "./decklist/types";
 import {StorageKeys, syncStorage} from "../common/storage";
 import {FullCard} from "../common/card-representations";
+import {CardLoader} from "./CardLoader";
 
 export function addGlobalClass(cssClass: string) {
     document.querySelector('#main').classList.add(cssClass);
@@ -28,6 +29,13 @@ export abstract class EnhancedView {
     private displayExtended: boolean = false;
     protected contentWasChecked: boolean = false;
 
+    private _loadingTemplate: HTMLTemplateElement = null;
+    private _legalTemplate: HTMLTemplateElement = null;
+    private _notLegalTemplate: HTMLTemplateElement = null;
+    private _bannedTemplate: HTMLTemplateElement = null;
+    private _extendedTemplate: HTMLTemplateElement = null;
+    private _cardLoader: CardLoader = null;
+
     public async init(): Promise<void> {
         await this.onInit();
         this.initMetaBar();
@@ -53,44 +61,92 @@ export abstract class EnhancedView {
     // TODO rename
     protected abstract checkDeck(): Promise<void>;
 
+    protected get loadingTemplate(): HTMLTemplateElement {
+        if (this._loadingTemplate === null) {
+            this._loadingTemplate = document.createElement('template');
+            this._loadingTemplate.innerHTML = this.createTemplate('loading', '', '<div class="dot-flashing"></div>');
+        }
+        return this._loadingTemplate;
+    }
+
+    protected get legalTemplate(): HTMLTemplateElement {
+        if (this._legalTemplate === null) {
+            this._legalTemplate = document.createElement('template');
+            this._legalTemplate.innerHTML = this.createTemplate('legal', 'Legal');
+        }
+        return this._legalTemplate;
+    }
+
+    protected get notLegalTemplate(): HTMLTemplateElement {
+        if (this._notLegalTemplate === null) {
+            this._notLegalTemplate = document.createElement('template');
+            this._notLegalTemplate.innerHTML = this.createTemplate('not-legal', 'Not Legal');
+        }
+        return this._notLegalTemplate;
+    }
+
+    protected get bannedTemplate(): HTMLTemplateElement {
+        if (this._bannedTemplate === null) {
+            this._bannedTemplate = document.createElement('template');
+            this._bannedTemplate.innerHTML = this.createTemplate('banned', 'Banned');
+        }
+        return this._bannedTemplate;
+    }
+
+    protected get extendedTemplate(): HTMLTemplateElement {
+        if (this._extendedTemplate === null) {
+            this._extendedTemplate = document.createElement('template');
+            this._extendedTemplate.innerHTML = this.createTemplate('extended', 'Extended');
+        }
+        return this._extendedTemplate;
+    }
+
+    protected get cardLoader(): CardLoader {
+        if (this._cardLoader === null) {
+            this._cardLoader = new CardLoader();
+        }
+
+        return this._cardLoader;
+    }
+
+    protected createTemplate(cssClass: string, text: string, html: string = ''): string {
+        return `<div class="legality-overlay ${cssClass}"></div>
+<span class="card-grid-item-count card-grid-item-legality ${cssClass}">${text}${html}</span>`;
+    };
+
     protected appendToDeckListEntryImage(
         deckListEntry: HTMLElement,
         card: FullCard,
-        legalTemplate: HTMLTemplateElement,
-        notLegalTemplate: HTMLTemplateElement,
-        bannedTemplate: HTMLTemplateElement,
-        extendedTemplate: HTMLTemplateElement
     ) {
         deckListEntry.querySelector('.legality-overlay').remove();
         deckListEntry.querySelector('.card-grid-item-legality').remove();
         const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
-        this.modifyCardItem(cardItem, card, legalTemplate, notLegalTemplate, bannedTemplate, extendedTemplate);
+        this.modifyCardItem(cardItem, card);
     }
 
     protected modifyCardItem(
         cardItem: HTMLElement,
         card: FullCard,
-        legalTemplate: HTMLTemplateElement,
-        notLegalTemplate: HTMLTemplateElement,
-        bannedTemplate: HTMLTemplateElement,
-        extendedTemplate: HTMLTemplateElement
     ) {
         cardItem.classList.remove('loading');
 
-        if (card.legalities.vintage === 'not_legal') {
-            cardItem.append(notLegalTemplate.content.cloneNode(true));
+        if (card.legalities.vintage === 'not_legal' ||
+            card.budgetPoints === null ||
+            card.budgetPoints === 0
+        ) {
+            cardItem.append(this.notLegalTemplate.content.cloneNode(true));
             cardItem.classList.add('not-legal');
         } else if (card.banStatus === 'banned'
             || card.legalities.vintage === 'restricted'
             || isBannedInAnyFormat(card)
         ) {
-            cardItem.append(bannedTemplate.content.cloneNode(true));
+            cardItem.append(this.bannedTemplate.content.cloneNode(true));
             cardItem.classList.add('banned');
         } else if (this.displayExtended && card.banStatus === 'extended') {
-            cardItem.append(extendedTemplate.content.cloneNode(true));
+            cardItem.append(this.extendedTemplate.content.cloneNode(true));
             cardItem.classList.add('extended');
         } else {
-            cardItem.append(legalTemplate.content.cloneNode(true));
+            cardItem.append(this.legalTemplate.content.cloneNode(true));
             cardItem.classList.add('legal');
         }
     }
@@ -100,7 +156,7 @@ export abstract class EnhancedView {
     protected enableChecks() {
         this.displayLoading();
         this.storeCheckFlag('overlay')
-            .then(this.checkDeck);
+            .then(() => this.checkDeck());
     }
 
     protected disableChecks(): void {

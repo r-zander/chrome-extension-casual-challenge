@@ -24,8 +24,8 @@ export abstract class AbstractDeckView extends EnhancedView {
         this.sidebar = new Sidebar();
         this.sidebar.init();
 
-        this.sidebar.addDisabledButtonClickHandler(this.enableChecks);
-        this.sidebar.addEnabledButtonClickHandler(this.disableChecks);
+        this.sidebar.addDisabledButtonClickHandler(this.enableChecks.bind(this));
+        this.sidebar.addEnabledButtonClickHandler(this.disableChecks.bind(this));
 
         return this.sidebar;
     }

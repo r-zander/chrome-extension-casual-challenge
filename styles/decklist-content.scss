@@ -28,6 +28,14 @@
     -webkit-align-items: center;
     -ms-flex-align: center;
     align-items: center;
+
+    > .casual-challenge-checks-loading {
+        width: 56px;
+
+        &:not(.hidden) + #check {
+            display: none;
+        }
+    }
 }
 
 .casual-challenge > .button-n {

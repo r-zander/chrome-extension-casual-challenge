@@ -2,9 +2,7 @@ import {addGlobalClass, EnhancedView, removeGlobalClass} from "./EnhancedView";
 import {StorageKeys, syncStorage} from "../common/storage";
 import {CheckMode, MetaBar} from "./decklist/types";
 import {SearchControls} from "./decklist/SearchControls";
-import {CardLoader} from "./CardLoader";
 import {formatBudgetPoints} from "../common/formatting";
-import {templateFn} from "./VisualDeckView";
 
 export class GridSearchView extends EnhancedView {
     private mode: CheckMode;
@@ -26,8 +24,8 @@ export class GridSearchView extends EnhancedView {
         this.searchControls = new SearchControls(this.mode);
         this.searchControls.init();
 
-        this.searchControls.setOnDisabledHandler(this.disableChecks);
-        this.searchControls.setOnOverlayHandler(this.enableChecks);
+        this.searchControls.setOnDisabledHandler(this.disableChecks.bind(this));
+        this.searchControls.setOnOverlayHandler(this.enableChecks.bind(this));
 
         this.searchControls.hideLoadingIndicator();
 
@@ -43,27 +41,14 @@ export class GridSearchView extends EnhancedView {
             // Just show our elements
             removeGlobalClass('mode-search-images-disabled');
             addGlobalClass('mode-search-images-overlay');
-            document.querySelectorAll('.card-grid-item-card > .legality-overlay, .card-grid-item-card > .card-grid-item-legality')
-                .forEach(element => {
-                    element.classList.remove('hidden');
-                });
+            document.querySelectorAll(this.getElementsToHideSelector()).forEach(element => {
+                element.classList.remove('hidden');
+            });
 
             this.displayEnabled();
             return;
         }
 
-        const loadingTemplate = document.createElement('template');
-        const legalTemplate = document.createElement('template');
-        const notLegalTemplate = document.createElement('template');
-        const bannedTemplate = document.createElement('template');
-        const extendedTemplate = document.createElement('template');
-        loadingTemplate.innerHTML = templateFn('loading', '', '<div class="dot-flashing"></div>');
-        legalTemplate.innerHTML = templateFn('legal', 'Legal');
-        notLegalTemplate.innerHTML = templateFn('not-legal', 'Not Legal');
-        bannedTemplate.innerHTML = templateFn('banned', 'Banned');
-        extendedTemplate.innerHTML = templateFn('extended', 'Extended');
-
-        const cardLoader = new CardLoader();
         document.querySelectorAll('.card-grid-item').forEach((deckListEntry: HTMLElement) => {
             if (deckListEntry.classList.contains('flexbox-spacer')) {
                 return;
@@ -72,25 +57,18 @@ export class GridSearchView extends EnhancedView {
             const cardId = deckListEntry.dataset.cardId;
             const cardItem = deckListEntry.querySelector('.card-grid-item-card') as HTMLElement;
 
-            cardItem.append(loadingTemplate.content.cloneNode(true));
+            cardItem.append(this.loadingTemplate.content.cloneNode(true));
             cardItem.classList.add('loading');
 
-            cardLoader.register(cardId).then(card => {
-                this.appendToDeckListEntryImage(
-                    deckListEntry,
-                    card,
-                    legalTemplate,
-                    notLegalTemplate,
-                    bannedTemplate,
-                    extendedTemplate
-                );
+            this.cardLoader.register(cardId).then(card => {
+                this.appendToDeckListEntryImage(deckListEntry, card);
                 const formattedBP = formatBudgetPoints(card.budgetPoints);
                 cardItem.insertAdjacentHTML('beforeend',
                     `<span class="card-grid-item-count card-grid-item-budget-points layout-${card.layout}">${formattedBP} BP</span>`)
             });
         });
 
-        cardLoader.start().then(() => {
+        this.cardLoader.start().then(() => {
             this.displayEnabled();
             this.contentWasChecked = true;
         });
