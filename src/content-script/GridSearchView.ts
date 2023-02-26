@@ -11,7 +11,7 @@ export class GridSearchView extends EnhancedView {
     private searchControls: SearchControls;
 
     public async onInit() {
-        this.mode = await syncStorage.get<CheckMode>(StorageKeys.SEARCH_CHECK_MODE, 'disabled');
+        this.mode = await syncStorage.get<CheckMode>(StorageKeys.SEARCH_CHECK_MODE, 'overlay');
         switch (this.mode) {
             case 'overlay':
                 addGlobalClass('mode-search-images-overlay');
