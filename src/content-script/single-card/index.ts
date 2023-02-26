@@ -3,7 +3,8 @@ import {formatBudgetPoints, formatBudgetPointsShare} from "../../common/formatti
 import {StorageKeys, syncStorage} from "../../common/storage";
 import {CardLoader} from "../CardLoader";
 import {Format} from "scryfall-api";
-import {PaperLegalities} from "../../common/card-representations";
+import {FullCard, PaperLegalities} from "../../common/card-representations";
+import {isBasicLand} from "../../common/CasualChallengeLogic";
 
 let displayExtended: boolean = false;
 
@@ -16,7 +17,7 @@ async function init(): Promise<void> {
     const cardLoader = new CardLoader();
     const fullCard = await cardLoader.loadSingle(cardId)
 
-    displayLegality(fullCard.banStatus, fullCard.banFormats, fullCard.legalities, fullCard.budgetPoints);
+    displayLegality(fullCard);
     displayBudgetPoints(fullCard.budgetPoints);
 }
 
@@ -58,44 +59,59 @@ function displayBudgetPoints(budgetPoints: number) {
     lastPrintTable.insertAdjacentHTML('afterend', html);
 }
 
-function displayLegality(
-    banStatus: string,
-    banFormats: Map<keyof typeof Format, number>,
-    legalities: PaperLegalities,
-    budgetPoints: number
-): void {
-    if (legalities.vintage === 'not_legal') {
+function displayLegality(card: FullCard): void {
+    if (isBasicLand(card)) {
+        appendLegalityElement('legal', 'Legal',
+            'Nonsnow basic lands are always legal.');
+        return;
+    }
+
+    if (card.legalities.vintage === 'not_legal') {
         appendLegalityElement('not-legal', 'Not Legal',
             'This card is not legal in Vintage.');
-    } else if (budgetPoints === null || budgetPoints === 0) {
+        return;
+    }
+
+    if (card.budgetPoints === null || card.budgetPoints === 0) {
         appendLegalityElement('not-legal', 'Not Legal',
             'This card has no valid budget points (yet).');
-    } else if (legalities.vintage === 'restricted') {
+        return;
+    }
+
+    if (card.legalities.vintage === 'restricted') {
         appendLegalityElement('banned', 'Banned',
             'Restricted in Vintage.');
-    } else if (banStatus === 'banned') {
-        appendLegalityElement('banned', 'Banned',
-            'Played in ' + formatsToString(banFormats) + ' competitive decks');
-    } else {
-        const bannedInFormats = bannedFormats(legalities);
-
-        if (bannedInFormats.length > 0) {
-            appendLegalityElement('banned', 'Banned',
-                'Banned in ' + bannedInFormats.join(', ') + '');
-        } else if (banStatus === 'extended') {
-            if (displayExtended) {
-                appendLegalityElement('extended', 'Extended',
-                    'Played in ' + formatsToString(banFormats) + ' competitive decks');
-            } else {
-                // Don't show "Extended" but still provide the user with format usage information
-                appendLegalityElement('legal', 'Legal',
-                    'Played in ' + formatsToString(banFormats) + ' competitive decks');
-            }
-        } else {
-            appendLegalityElement('legal', 'Legal',
-                'There are no bans and the card is legal in Vintage.');
-        }
+        return;
     }
+
+    if (card.banStatus === 'banned') {
+        appendLegalityElement('banned', 'Banned',
+            'Played in ' + formatsToString(card.banFormats) + ' competitive decks');
+        return;
+    }
+
+    const bannedInFormats = bannedFormats(card.legalities);
+    if (bannedInFormats.length > 0) {
+        appendLegalityElement('banned', 'Banned',
+            'Banned in ' + bannedInFormats.join(', ') + '');
+        return;
+    }
+
+    if (card.banStatus !== 'extended') {
+        appendLegalityElement('legal', 'Legal',
+            'There are no bans and the card is legal in Vintage.');
+        return;
+    }
+
+    if (displayExtended) {
+        appendLegalityElement('extended', 'Extended',
+            'Played in ' + formatsToString(card.banFormats) + ' competitive decks');
+        return;
+    }
+
+    // Don't show "Extended" but still provide the user with format usage information
+    appendLegalityElement('legal', 'Legal',
+        'Played in ' + formatsToString(card.banFormats) + ' competitive decks');
 }
 
 /**

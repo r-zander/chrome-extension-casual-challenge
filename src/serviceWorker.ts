@@ -13,6 +13,7 @@ import CardPrices from "../data/card-prices.json";
 import VintageRestricted from "../data/vintage-restricted.json";
 import RawBans from "../data/bans.json";
 import RawExtendedBans from "../data/extended-bans.json";
+import {isBasicLand} from "./common/CasualChallengeLogic";
 // import CardPrices04 from "../data/card-prices-20220401-20220731.json";
 // import CardPrices05 from "../data/card-prices-20220501-20220731.json";
 // import CardPrices06 from "../data/card-prices-20220601-20220731.json";
@@ -151,10 +152,14 @@ function sendCardInfo(cardName: string, sendResponse: (response: SingleCardRespo
 
 function getCardInfo(cardName: string): SingleCardResponse {
     let price: number;
-    if (budgetPoints.has(cardName)) {
-        price = budgetPoints.get(cardName); // No partial check for budget points, they always have the full name
+    if (isBasicLand({name: cardName})) {
+        // Basic lands are always legal & for free
+        return {banStatus: null, banFormats: null, budgetPoints: 0};
+    } else if (budgetPoints.has(cardName)) {
+        // No partial check for budget points, they always have the full name
+        price = budgetPoints.get(cardName);
     } else {
-        return {banStatus: 'unknown', banFormats: null, budgetPoints: Number.NaN};
+        return {banStatus: 'unknown', banFormats: null, budgetPoints: null};
     }
     const partialName = cardName.split('//')[0].trim();
     if (bans.has(cardName)) {

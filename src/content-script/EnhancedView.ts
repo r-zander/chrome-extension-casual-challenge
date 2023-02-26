@@ -2,6 +2,7 @@ import {CheckMode, MetaBar} from "./decklist/types";
 import {StorageKeys, syncStorage} from "../common/storage";
 import {FullCard} from "../common/card-representations";
 import {CardLoader} from "./CardLoader";
+import {isBasicLand} from "../common/CasualChallengeLogic";
 
 export function addGlobalClass(cssClass: string) {
     document.querySelector('#main').classList.add(cssClass);
@@ -124,31 +125,41 @@ export abstract class EnhancedView {
         this.modifyCardItem(cardItem, card);
     }
 
-    protected modifyCardItem(
-        cardItem: HTMLElement,
-        card: FullCard,
-    ) {
+    protected modifyCardItem(cardItem: HTMLElement, card: FullCard,) {
         cardItem.classList.remove('loading');
 
-        if (card.legalities.vintage === 'not_legal' ||
-            card.budgetPoints === null ||
-            card.budgetPoints === 0
+        if (isBasicLand(card)) {
+            cardItem.append(this.legalTemplate.content.cloneNode(true));
+            cardItem.classList.add('legal');
+            return;
+        }
+
+        if (card.legalities.vintage === 'not_legal'
+            || card.budgetPoints === null
+            || card.budgetPoints === 0
         ) {
             cardItem.append(this.notLegalTemplate.content.cloneNode(true));
             cardItem.classList.add('not-legal');
-        } else if (card.banStatus === 'banned'
+            return;
+        }
+
+        if (card.banStatus === 'banned'
             || card.legalities.vintage === 'restricted'
             || isBannedInAnyFormat(card)
         ) {
             cardItem.append(this.bannedTemplate.content.cloneNode(true));
             cardItem.classList.add('banned');
-        } else if (this.displayExtended && card.banStatus === 'extended') {
+            return;
+        }
+
+        if (this.displayExtended && card.banStatus === 'extended') {
             cardItem.append(this.extendedTemplate.content.cloneNode(true));
             cardItem.classList.add('extended');
-        } else {
-            cardItem.append(this.legalTemplate.content.cloneNode(true));
-            cardItem.classList.add('legal');
+            return;
         }
+
+        cardItem.append(this.legalTemplate.content.cloneNode(true));
+        cardItem.classList.add('legal');
     }
 
     protected abstract storeCheckFlag(newValue: CheckMode): Promise<void>;
