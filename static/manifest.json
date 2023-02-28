@@ -1,7 +1,7 @@
 {
   "name": "Scryfall - Casual Challenge Checker",
   "description": "Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a custom MtG format created by XieLong and Janosch.exe",
-  "version": "0.6.1",
+  "version": "0.6.0",
   "manifest_version": 3,
   "author": "Raoul Zander",
   "homepage_url": "https://sites.google.com/view/a5magicdivision/casual-challenge",
