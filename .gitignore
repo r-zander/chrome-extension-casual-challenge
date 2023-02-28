@@ -2,4 +2,5 @@ dist
 node_modules
 .DS_Store
 .env
+/upload-live.bat
 /chrome-extension-casual-challenge.zip
