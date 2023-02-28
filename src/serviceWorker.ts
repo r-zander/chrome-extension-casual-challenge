@@ -10,7 +10,6 @@ import {
 import {StorageKeys} from "./common/storage";
 import {SerializableMap} from "./common/SerializableMap";
 import CardPrices from "../data/card-prices.json";
-import VintageRestricted from "../data/vintage-restricted.json";
 import RawBans from "../data/bans.json";
 import RawExtendedBans from "../data/extended-bans.json";
 import {isBasicLand} from "./common/CasualChallengeLogic";
@@ -219,11 +218,6 @@ function loadBudgetPoints(input: Record<string, Record<string, number>>, priceIn
 function loadBans(rawBans: Ban[]): Bans {
     const bans: Bans = new SerializableMap<string, BanFormats>();
     rawBans.forEach((ban: Ban) => {
-        // Filter out any vintage restricted cards, as they should
-        // appear as "not legal" and neither 'banned' nor 'extended'
-        // eslint-disable-next-line no-prototype-builtins
-        if (VintageRestricted.hasOwnProperty(ban.name)) return;
-
         addCardToMap(bans, ban.name, ban.formats);
     });
     return bans;
