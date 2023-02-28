@@ -9,6 +9,7 @@ export function isBasicLand(card: HasName): boolean {
         case 'Swamp':
         case 'Mountain':
         case 'Forest':
+        case 'Wastes':
             return true;
     }
 
