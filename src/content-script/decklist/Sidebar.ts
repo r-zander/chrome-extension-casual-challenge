@@ -58,13 +58,11 @@ export class Sidebar implements MetaBar {
 
     public renderDeckStatistics(deckStatistics: DeckStatistics): void {
         const budgetPointSumElement = document.querySelector('.' + sidebarClasses.BUDGET_POINT_SUM);
-        budgetPointSumElement.innerHTML
-            = formatBudgetPoints(deckStatistics.budgetPoints);
+        budgetPointSumElement.innerHTML = formatBudgetPoints(deckStatistics.budgetPoints);
         budgetPointSumElement.parentElement.classList.remove('hidden');
 
         const budgetPointShareElement = document.querySelector('.' + sidebarClasses.BUDGET_POINT_SHARE);
-        budgetPointShareElement.textContent
-            = formatBudgetPointsShare(deckStatistics.budgetPoints);
+        budgetPointShareElement.textContent = formatBudgetPointsShare(deckStatistics.budgetPoints);
         budgetPointShareElement.parentElement.classList.remove('hidden');
 
     }

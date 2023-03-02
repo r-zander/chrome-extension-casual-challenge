@@ -44,6 +44,9 @@ export function formatBudgetPointsShare(budgetPoints: number) {
  */
 export function formatShortPercentage(ratio: number) {
     // Edge case handling
+    if (ratio > 1.0 && ratio < 1.01) {
+        ratio = 1.01;
+    }
     if (ratio > 1.000) {
         return shortPercentageFormatGt100.format(ratio);
     }
