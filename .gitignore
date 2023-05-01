@@ -4,3 +4,5 @@ node_modules
 .env
 /upload-live.bat
 /chrome-extension-casual-challenge.zip
+/janik-budgetpoints/AllPrices.json
+/janik-budgetpoints/AllPrintings.json

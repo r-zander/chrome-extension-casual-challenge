@@ -3,10 +3,10 @@ import json
 printingsFilePath = '.\\AllPrintings.json'
 pricesFilePath = '.\\AllPrices.json'
 testDecksPath = ['C:\\Users\\nisse\\Desktop\\SwampAss.txt','C:\\Users\\nisse\\Desktop\\RakSac.txt','C:\\Users\\nisse\\Desktop\\GelectrodeFun.txt']
-allPricesPath = '..\\data\\card-prices.json'
+outputPath = '..\\data\\card-prices.json'
 
-earliestDate = 20221201 #inclusive
-latestDate   = 20230301 #exclusive
+earliestDate = 20230301 #inclusive
+latestDate   = 20230501 #exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
@@ -162,5 +162,7 @@ getDecklistPrice(allCardNames)
 # printBothPricesForDecklist(testDecksPath[1])
 # printBothPricesForDecklist(testDecksPath[2])
 
-with open(allPricesPath, 'w', encoding='utf-8') as f:
+with open(outputPath, 'w', encoding='utf-8') as f:
 	f.write(json.dumps(cardPrices))
+
+print ('All done. Ending now.')
