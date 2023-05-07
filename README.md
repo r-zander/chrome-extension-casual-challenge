@@ -11,18 +11,26 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
   - Deck list view (visual and list)
   - Search view (only images)
 
-## Deployment
+## Development
 
-- Create zip from everything but
-  ```
-  .git/
-  .idea/
-  publishing/
-  tests/
-  .gitignore
-  chrome-extension-casual-challenge.iml
-  README.md
-  ```
+### Used development stack
+
+* Windows 10 (22H2)
+* Node.js v18.15.0
+* npm 9.6.4
+
+### Build Firefox Add-On
+
+* `npm install`
+* `npm run build-firefox`
+* `npm run package-firefox`
+* --> `dist/firefox` contains a zip file ready to be uploaded to addons.mozilla.org
+
+### Build Chrome Extension
+
+* `npm install`
+* `npm run build-chrome`
+* `upload.bat`
 
 ## Credits
 

@@ -1,0 +1,11 @@
+{
+  "background": {
+    "scripts": ["serviceWorker.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "addon@casual-challenge.org",
+      "strict_min_version": "109.0"
+    }
+  }
+}
