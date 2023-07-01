@@ -98,6 +98,8 @@ def calculatePricesForCard (cardName, isDebug = False):
 			if(printingPrice == uuid):
 				if 'cardmarket' not in rawPrices[printingPrice]['paper']:
 					continue
+				if 'retail' not in rawPrices[printingPrice]['paper']['cardmarket']:
+					continue
 				if 'normal' in rawPrices[printingPrice]['paper']['cardmarket']['retail']:
 					rawCardPrices[uuid] = getPricesWhithinTimeRange(rawPrices[printingPrice]['paper']['cardmarket']['retail']['normal'])
 				if 'foil' in rawPrices[printingPrice]['paper']['cardmarket']['retail']:
