@@ -2,6 +2,9 @@ import json
 
 printingsFilePath = '.\\AllPrintings.json'
 pricesFilePath = '.\\AllPrices.json'
+# Contains a mapping of cardName => [ignoredSets] to basically blacklist certain prices that are just way off.
+# For examples, check the file. For comments on each card+set combination check the commit history
+ignoredPricesFilePath = '.\\IgnoredPrices.json'
 testDecksPath = ['C:\\Users\\nisse\\Desktop\\SwampAss.txt','C:\\Users\\nisse\\Desktop\\RakSac.txt','C:\\Users\\nisse\\Desktop\\GelectrodeFun.txt']
 outputPath = '..\\data\\card-prices.json'
 
@@ -27,16 +30,29 @@ def readDecklistFromFile (filePath):
 
 #FetchAllPrintings that should be considered for price evaluation
 def getAllLegalPrintings(cardName, getIllegalPrintings = False, isDebug = False):
-	if isDebug:
-		print('Looking for '+ cardName)
+	if isDebug: print('Looking for '+ cardName)
 	legalUUIDs = []
 	for mtgSet in rawPrintings:
 		for card in rawPrintings[mtgSet]['cards']:
-			if(cardName == card['name']):
-				if 'paper' not in card['availability']: # Is this as digital only card?
+			if(cardName != card['name']):
+				continue
+
+			if isDebug: print('Found in set: '+ mtgSet + ' with UUID ' + card['uuid'])
+			if 'paper' not in card['availability']: # Is this as digital only card?
+				if isDebug: print('Digital only card')
+				continue
+			if (not getIllegalPrintings):
+				if ('isOversized' in card and card['isOversized'] == True):
+					if isDebug: print('Oversized card')
 					continue
-				if (getIllegalPrintings or (('isOversized' not in card or card['isOversized'] == False) and card['borderColor'] not in illegalBorderColors)):
-					legalUUIDs.append(card['uuid'])
+				if (card['borderColor'] in illegalBorderColors):
+					if isDebug: print('Illegal card border: ' + card['borderColor'])
+					continue
+				if (cardName in rawIgnores and mtgSet in rawIgnores[cardName]):
+					if isDebug: print('Card set is set to be ignored.')
+					continue
+
+			legalUUIDs.append(card['uuid'])
 	return legalUUIDs
 
 def getPricesWhithinTimeRange (pricesPerDay):
@@ -44,6 +60,7 @@ def getPricesWhithinTimeRange (pricesPerDay):
 	for price in pricesPerDay:
 		dateNumber = 0
 		x = price.split('-')
+		# TODO suspicious
 		dateNumber = int(x[0]) * 10000 + int(x[1]) * 100 + int(x[2]) # Converting a date string 2022-02-01 into the number 20220201 for comparisons
 		if (dateNumber >= earliestDate and dateNumber < latestDate):
 			pricesWithinTimeRange[dateNumber]=(pricesPerDay[price])
@@ -126,12 +143,23 @@ def printBothPricesForDecklist (decklistPath):
 	print(deckFileName + ': ' + str(cheapestPrintingPrice)+' | ' +str(cheapestDayPrice) )
 
 print ('Untap, Upkeep, Draw!')
+
+print('Reading printings')
 with open(printingsFilePath, 'r', encoding='utf-8') as f:
 	rawPrintings = json.load(f)['data']
-print ('Done Reading Cards\nReading Prices')
+print ('Done Reading Cards')
+
+print('Reading Prices')
 with open (pricesFilePath, 'r', encoding='utf-8') as f:
 	rawPrices = json.load(f)['data']
-print ('Done Reading Prices\nBuilding up Card Dictionary')
+print ('Done Reading Prices')
+
+print('Reading Ignore list')
+with open (ignoredPricesFilePath, 'r', encoding='utf-8') as f:
+	rawIgnores = json.load(f)
+print ('Done Reading Ignore list')
+
+print('Building up Card Dictionary')
 # Add basics as free cards
 basics = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes']
 basicPrices = {}
@@ -147,23 +175,19 @@ for mtgSet in rawPrintings:
 		if card['name'] not in allCardNames:
 			allCardNames.append(card['name'])
 print ('Done building Card Dictionary: ' + str(len(allCardNames)))
+
+print ('Calculating budget points')
 getDecklistPrice(allCardNames)
+print ('Done calculating budget points')
 
-
-
-#for mtgSet in rawPrintings:
-#		for card in rawPrintings[mtgSet]['cards']:
-#			if(cardName == card['name']):
-#				if 'paper' not in card['availability']: # Is this as digital only card?
-#					continue
-#				if (getIllegalPrintings or (('isOversized' not in card or card['isOversized'] == False) and card['borderColor'] not in illegalBorderColors)):
-#					legalUUIDs.append(card['uuid'])
+# print (getAllLegalPrintings("Tundra", False, True))
 
 
 # printBothPricesForDecklist(testDecksPath[0])
 # printBothPricesForDecklist(testDecksPath[1])
 # printBothPricesForDecklist(testDecksPath[2])
 
+print ('Writing card-prices.json')
 with open(outputPath, 'w', encoding='utf-8') as f:
 	f.write(json.dumps(cardPrices))
 
