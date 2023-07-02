@@ -5,8 +5,8 @@ pricesFilePath = '.\\AllPrices.json'
 testDecksPath = ['C:\\Users\\nisse\\Desktop\\SwampAss.txt','C:\\Users\\nisse\\Desktop\\RakSac.txt','C:\\Users\\nisse\\Desktop\\GelectrodeFun.txt']
 outputPath = '..\\data\\card-prices.json'
 
-earliestDate = 20230301 #inclusive
-latestDate   = 20230501 #exclusive
+earliestDate = 20230401 #inclusive
+latestDate   = 20230701 #exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
