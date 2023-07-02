@@ -132,7 +132,10 @@ def getDecklistPrice(decklist, mode = 'A', isDebug = False):
 	for card in decklist:
 		if card not in cardPrices:
 			calculatePricesForCard(card, isDebug)
+			if (len(cardPrices) % 100 == 0):
+				print (str(len(cardPrices)) + ' cards done.')
 		totalDeckPrice += cardPrices[card][mode]
+	print (str(len(cardPrices)) + ' cards done.')
 	return (totalDeckPrice)
 
 def printBothPricesForDecklist (decklistPath):
@@ -147,17 +150,14 @@ print ('Untap, Upkeep, Draw!')
 print('Reading printings')
 with open(printingsFilePath, 'r', encoding='utf-8') as f:
 	rawPrintings = json.load(f)['data']
-print ('Done Reading Cards')
 
 print('Reading Prices')
 with open (pricesFilePath, 'r', encoding='utf-8') as f:
 	rawPrices = json.load(f)['data']
-print ('Done Reading Prices')
 
 print('Reading Ignore list')
 with open (ignoredPricesFilePath, 'r', encoding='utf-8') as f:
 	rawIgnores = json.load(f)
-print ('Done Reading Ignore list')
 
 print('Building up Card Dictionary')
 # Add basics as free cards
@@ -178,7 +178,6 @@ print ('Done building Card Dictionary: ' + str(len(allCardNames)))
 
 print ('Calculating budget points')
 getDecklistPrice(allCardNames)
-print ('Done calculating budget points')
 
 # print (getAllLegalPrintings("Tundra", False, True))
 
