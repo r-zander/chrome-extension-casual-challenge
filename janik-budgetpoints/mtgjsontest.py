@@ -5,7 +5,6 @@ pricesFilePath = '.\\AllPrices.json'
 # Contains a mapping of cardName => [ignoredSets] to basically blacklist certain prices that are just way off.
 # For examples, check the file. For comments on each card+set combination check the commit history
 ignoredPricesFilePath = '.\\IgnoredPrices.json'
-testDecksPath = ['C:\\Users\\nisse\\Desktop\\SwampAss.txt','C:\\Users\\nisse\\Desktop\\RakSac.txt','C:\\Users\\nisse\\Desktop\\GelectrodeFun.txt']
 outputPath = '..\\data\\card-prices.json'
 
 earliestDate = 20230401 #inclusive
@@ -82,15 +81,15 @@ def getCheapestPerDayAverage(pricesPerPrintings):
 	return sum/len(allMinimumDayPrices)
 
 
-def calculatePricesForCard (cardName, UUIDs, isDebug = False):
+def calculatePricesForCard (cardName, uuidAttributes, isDebug = False):
+	if isDebug: print('calculatePricesForCard ' + cardName)
+	if isDebug: print ('UUIDs and Attributes: ' + str(uuidAttributes))
 	rawCardPrices = {}
 	calculatedAveragePrices = {}
-	for printingPrice in UUIDs:
-		if printingPrice not in rawPrices:
-			print('No prices found for UUID ' + printingPrice)
+	for printingPriceUUID, attributes in uuidAttributes.items():
+		if printingPriceUUID not in rawPrices:
 			continue
-
-		priceEntry = rawPrices[printingPrice]
+		priceEntry = rawPrices[printingPriceUUID]
 		if 'paper' not in priceEntry:
 			continue
 		paperPrice = priceEntry['paper']
@@ -100,15 +99,16 @@ def calculatePricesForCard (cardName, UUIDs, isDebug = False):
 		if 'retail' not in cardmarketPrice:
 			continue
 		cardmarketRetailPrice = cardmarketPrice['retail']
-		if 'normal' in cardmarketRetailPrice:
-			rawCardPrices[printingPrice] = getPricesWhithinTimeRange(cardmarketRetailPrice['normal'])
-		if 'foil' in cardmarketRetailPrice:
-			rawCardPrices[printingPrice+'-foil'] = getPricesWhithinTimeRange(cardmarketRetailPrice['foil'])
+		if attributes['hasNonFoil'] == True and 'normal' in cardmarketRetailPrice:
+			rawCardPrices[printingPriceUUID] = getPricesWhithinTimeRange(cardmarketRetailPrice['normal'])
+		if attributes['hasFoil'] == True and 'foil' in cardmarketRetailPrice:
+			rawCardPrices[printingPriceUUID+'-foil'] = getPricesWhithinTimeRange(cardmarketRetailPrice['foil'])
+	if isDebug: print ('rawCardPrices:' + str(rawCardPrices))
 	calculatedAveragePrices['A'] = round(getCheapestPrintAverage(rawCardPrices),2)
 	calculatedAveragePrices['B'] = round(getCheapestPerDayAverage(rawCardPrices),2)
 	cardPrices[cardName] = calculatedAveragePrices
-	if isDebug:
-		print (cardName+':'+str(calculatedAveragePrices))
+	if isDebug: print ('calculatedAveragePrices: ' + str(calculatedAveragePrices))
+
 
 def getDecklistPrice(decklist, mode = 'A', isDebug = False):
 	totalDeckPrice = 0
@@ -156,8 +156,12 @@ def getAllCardVersions(getIllegalPrintings = False, isDebug = False):
 					continue
 
 			if cardName not in allCardVersion:
-				allCardVersion[cardName] = []
-			allCardVersion[cardName].append(card['uuid'])
+				allCardVersion[cardName] = {}
+			allCardVersion[cardName][card['uuid']] = {
+				'setCode': card['setCode'],
+				'hasFoil': card['hasFoil'],
+				'hasNonFoil': card['hasNonFoil']
+			}
 	# if (len(allCardVersion) >= 5000):
 	# 	break
 	return allCardVersion
@@ -189,15 +193,14 @@ for basic in basics:
 allCards = getAllCardVersions()
 print ('Done building Card Dictionary: ' + str(len(allCards)))
 
+# Uncomment to look at a single card in detail
+# allCards = {
+# 	"Doomsday": allCards["Doomsday"]
+# }
+# getDecklistPrice(allCards, 'A', True)
+
 print ('Calculating budget points')
 getDecklistPrice(allCards)
-
-# print (getAllLegalPrintings("Tundra", False, True))
-
-
-# printBothPricesForDecklist(testDecksPath[0])
-# printBothPricesForDecklist(testDecksPath[1])
-# printBothPricesForDecklist(testDecksPath[2])
 
 print ('Writing card-prices.json')
 with open(outputPath, 'w', encoding='utf-8') as f:
