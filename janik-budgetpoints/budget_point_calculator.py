@@ -12,7 +12,7 @@ latestDate   = 20230701 #exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
-#cardPrices = 
+#cardPrices =
 #	{'Soul Warden': {
 #		'cheapestPerDayAverage': 1.11,
 #		'cheapestPrintAverage': 1.21},
@@ -43,7 +43,7 @@ def getCheapestPrintAverage (pricesPerPrintings):
 	allAverages = []
 	for printing in pricesPerPrintings:
 		if (len(pricesPerPrintings[printing]) == 0):
-			continue;
+			continue
 		sum = 0
 		for date in pricesPerPrintings[printing]:
 			sum += pricesPerPrintings[printing][date]
@@ -62,7 +62,7 @@ def getCheapestPerDayAverage(pricesPerPrintings):
 	allDates = []
 	for printing in pricesPerPrintings:
 		if (len(pricesPerPrintings[printing]) == 0):
-			continue;
+			continue
 		for date in pricesPerPrintings[printing]:
 			if date not in allDates:
 				allDates.append(date)
@@ -79,6 +79,33 @@ def getCheapestPerDayAverage(pricesPerPrintings):
 	for average in allMinimumDayPrices:
 		sum += average
 	return sum/len(allMinimumDayPrices)
+
+
+def checkForAnomalies(pricesPerPrintings, cardName, uuidAttributes, isDebug = False):
+	uuidsToBeRemoved = []
+	for uuid, prices in pricesPerPrintings.items():
+		if len(prices) == 0:
+			continue
+
+		knownPrice = -1
+		allPricesMatch = True
+		for price in prices.values():
+			if knownPrice == -1:
+				knownPrice = price
+			elif knownPrice != price:
+				allPricesMatch = False
+				break
+		if allPricesMatch:
+			if isDebug:
+				if uuid.endswith('-foil'):
+					print('Price anomaly for ' + cardName + ' FOIL (' + str(uuidAttributes[uuid.replace('-foil', '')]) + '): All prices are ' + str(knownPrice))
+				else:
+					print('Price anomaly for ' + cardName + ' (' + str(uuidAttributes[uuid]) + '): All prices are ' + str(knownPrice))
+			uuidsToBeRemoved.append(uuid)
+
+	# Dangerous, see https://docs.google.com/spreadsheets/d/1LKQm2lRDXAFBWJAtGFYlzsqE7Rgx00aA11vpXpDU7DU/edit#gid=429538483 "New 2"
+	for uuid in uuidsToBeRemoved:
+		pricesPerPrintings.pop(uuid)
 
 
 def calculatePricesForCard (cardName, uuidAttributes, isDebug = False):
@@ -104,6 +131,7 @@ def calculatePricesForCard (cardName, uuidAttributes, isDebug = False):
 		if attributes['hasFoil'] == True and 'foil' in cardmarketRetailPrice:
 			rawCardPrices[printingPriceUUID+'-foil'] = getPricesWhithinTimeRange(cardmarketRetailPrice['foil'])
 	if isDebug: print ('rawCardPrices:' + str(rawCardPrices))
+	# checkForAnomalies(rawCardPrices, cardName, uuidAttributes, isDebug)
 	calculatedAveragePrices['A'] = round(getCheapestPrintAverage(rawCardPrices),2)
 	calculatedAveragePrices['B'] = round(getCheapestPerDayAverage(rawCardPrices),2)
 	cardPrices[cardName] = calculatedAveragePrices
