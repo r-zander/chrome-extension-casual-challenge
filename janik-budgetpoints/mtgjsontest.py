@@ -28,33 +28,6 @@ def readDecklistFromFile (filePath):
 		return decklist
 
 
-#FetchAllPrintings that should be considered for price evaluation
-def getAllLegalPrintings(cardName, getIllegalPrintings = False, isDebug = False):
-	if isDebug: print('Looking for '+ cardName)
-	legalUUIDs = []
-	for mtgSet in rawPrintings:
-		for card in rawPrintings[mtgSet]['cards']:
-			if(cardName != card['name']):
-				continue
-
-			if isDebug: print('Found in set: '+ mtgSet + ' with UUID ' + card['uuid'])
-			if 'paper' not in card['availability']: # Is this as digital only card?
-				if isDebug: print('Digital only card')
-				continue
-			if (not getIllegalPrintings):
-				if ('isOversized' in card and card['isOversized'] == True):
-					if isDebug: print('Oversized card')
-					continue
-				if (card['borderColor'] in illegalBorderColors):
-					if isDebug: print('Illegal card border: ' + card['borderColor'])
-					continue
-				if (cardName in rawIgnores and mtgSet in rawIgnores[cardName]):
-					if isDebug: print('Card set is set to be ignored.')
-					continue
-
-			legalUUIDs.append(card['uuid'])
-	return legalUUIDs
-
 def getPricesWhithinTimeRange (pricesPerDay):
 	pricesWithinTimeRange = {}
 	for price in pricesPerDay:
@@ -65,6 +38,7 @@ def getPricesWhithinTimeRange (pricesPerDay):
 		if (dateNumber >= earliestDate and dateNumber < latestDate):
 			pricesWithinTimeRange[dateNumber]=(pricesPerDay[price])
 	return pricesWithinTimeRange
+
 
 def getCheapestPrintAverage (pricesPerPrintings):
 	allAverages = []
@@ -82,6 +56,7 @@ def getCheapestPrintAverage (pricesPerPrintings):
 		if (cheapestAverage > average):
 			cheapestAverage = average
 	return cheapestAverage
+
 
 def getCheapestPerDayAverage(pricesPerPrintings):
 	allMinimumDayPrices = []
@@ -106,21 +81,29 @@ def getCheapestPerDayAverage(pricesPerPrintings):
 		sum += average
 	return sum/len(allMinimumDayPrices)
 
-def calculatePricesForCard (cardName, isDebug = False):
-	uuids = getAllLegalPrintings(cardName, False, isDebug)
+
+def calculatePricesForCard (cardName, UUIDs, isDebug = False):
 	rawCardPrices = {}
 	calculatedAveragePrices = {}
-	for printingPrice in rawPrices:
-		for uuid in uuids:
-			if(printingPrice == uuid):
-				if 'cardmarket' not in rawPrices[printingPrice]['paper']:
-					continue
-				if 'retail' not in rawPrices[printingPrice]['paper']['cardmarket']:
-					continue
-				if 'normal' in rawPrices[printingPrice]['paper']['cardmarket']['retail']:
-					rawCardPrices[uuid] = getPricesWhithinTimeRange(rawPrices[printingPrice]['paper']['cardmarket']['retail']['normal'])
-				if 'foil' in rawPrices[printingPrice]['paper']['cardmarket']['retail']:
-					rawCardPrices[uuid+'-foil'] = getPricesWhithinTimeRange(rawPrices[printingPrice]['paper']['cardmarket']['retail']['foil'])
+	for printingPrice in UUIDs:
+		if printingPrice not in rawPrices:
+			print('No prices found for UUID ' + printingPrice)
+			continue
+
+		priceEntry = rawPrices[printingPrice]
+		if 'paper' not in priceEntry:
+			continue
+		paperPrice = priceEntry['paper']
+		if 'cardmarket' not in paperPrice:
+			continue
+		cardmarketPrice = paperPrice['cardmarket']
+		if 'retail' not in cardmarketPrice:
+			continue
+		cardmarketRetailPrice = cardmarketPrice['retail']
+		if 'normal' in cardmarketRetailPrice:
+			rawCardPrices[printingPrice] = getPricesWhithinTimeRange(cardmarketRetailPrice['normal'])
+		if 'foil' in cardmarketRetailPrice:
+			rawCardPrices[printingPrice+'-foil'] = getPricesWhithinTimeRange(cardmarketRetailPrice['foil'])
 	calculatedAveragePrices['A'] = round(getCheapestPrintAverage(rawCardPrices),2)
 	calculatedAveragePrices['B'] = round(getCheapestPerDayAverage(rawCardPrices),2)
 	cardPrices[cardName] = calculatedAveragePrices
@@ -129,12 +112,12 @@ def calculatePricesForCard (cardName, isDebug = False):
 
 def getDecklistPrice(decklist, mode = 'A', isDebug = False):
 	totalDeckPrice = 0
-	for card in decklist:
-		if card not in cardPrices:
-			calculatePricesForCard(card, isDebug)
+	for cardName in decklist:
+		if cardName not in cardPrices:
+			calculatePricesForCard(cardName, decklist[cardName], isDebug)
 			if (len(cardPrices) % 100 == 0):
 				print (str(len(cardPrices)) + ' cards done.')
-		totalDeckPrice += cardPrices[card][mode]
+		totalDeckPrice += cardPrices[cardName][mode]
 	print (str(len(cardPrices)) + ' cards done.')
 	return (totalDeckPrice)
 
@@ -144,6 +127,40 @@ def printBothPricesForDecklist (decklistPath):
 	cheapestPrintingPrice = getDecklistPrice(decklist)
 	cheapestDayPrice = getDecklistPrice(decklist, 'B')
 	print(deckFileName + ': ' + str(cheapestPrintingPrice)+' | ' +str(cheapestDayPrice) )
+
+# FetchAllPrintings that should be considered for price evaluation
+# {
+#	"Soul Warden": [UUID1, UUID2, ...],
+#	..
+# }
+def getAllCardVersions(getIllegalPrintings = False, isDebug = False):
+	allCardVersion = {}
+	for mtgSet in rawPrintings:
+		for card in rawPrintings[mtgSet]['cards']:
+			cardName = card['name']
+
+			if isDebug: print('Found in set: '+ mtgSet + ' with UUID ' + card['uuid'])
+			if 'paper' not in card['availability']: # Is this as digital only card?
+				if isDebug: print('Digital only card')
+				continue
+
+			if not getIllegalPrintings:
+				if 'isOversized' in card and card['isOversized'] == True:
+					if isDebug: print('Oversized card')
+					continue
+				if card['borderColor'] in illegalBorderColors:
+					if isDebug: print('Illegal card border: ' + card['borderColor'])
+					continue
+				if cardName in rawIgnores and mtgSet in rawIgnores[cardName]:
+					if isDebug: print('Card set is set to be ignored.')
+					continue
+
+			if cardName not in allCardVersion:
+				allCardVersion[cardName] = []
+			allCardVersion[cardName].append(card['uuid'])
+	# if (len(allCardVersion) >= 5000):
+	# 	break
+	return allCardVersion
 
 print ('Untap, Upkeep, Draw!')
 
@@ -169,15 +186,11 @@ for basic in basics:
 	cardPrices[basic]=basicPrices
 
 # Create a "decklist" with every card in existance
-allCardNames = []
-for mtgSet in rawPrintings:
-	for card in rawPrintings[mtgSet]['cards']:
-		if card['name'] not in allCardNames:
-			allCardNames.append(card['name'])
-print ('Done building Card Dictionary: ' + str(len(allCardNames)))
+allCards = getAllCardVersions()
+print ('Done building Card Dictionary: ' + str(len(allCards)))
 
 print ('Calculating budget points')
-getDecklistPrice(allCardNames)
+getDecklistPrice(allCards)
 
 # print (getAllLegalPrintings("Tundra", False, True))
 
