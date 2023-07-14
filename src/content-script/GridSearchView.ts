@@ -1,4 +1,4 @@
-import {addGlobalClass, EnhancedView, removeGlobalClass} from "./EnhancedView";
+import {addGlobalClass, EnhancedView, removeGlobalClass} from "./_EnhancedView";
 import {StorageKeys, syncStorage} from "../common/storage";
 import {CheckMode, MetaBar} from "./decklist/types";
 import {SearchControls} from "./decklist/SearchControls";

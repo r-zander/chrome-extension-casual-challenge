@@ -1,4 +1,4 @@
-import {EnhancedView} from "./EnhancedView";
+import {EnhancedView} from "./_EnhancedView";
 import {Sidebar} from "./decklist/Sidebar";
 import {CheckMode, MetaBar} from "./decklist/types";
 import {StorageKeys, syncStorage} from "../common/storage";

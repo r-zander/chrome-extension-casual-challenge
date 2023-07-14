@@ -1,5 +1,6 @@
-import {EnhancedView} from "./EnhancedView";
-import { MetaBar} from "./decklist/types";
+import {EnhancedView} from "../_EnhancedView";
+import { MetaBar} from "../decklist/types";
+import {NoopMetaBar} from "./NoopMetaBar";
 
 export class NoopView extends EnhancedView {
     protected async checkDeck(): Promise<void> {
@@ -31,24 +32,4 @@ export class NoopView extends EnhancedView {
     }
 }
 
-class NoopMetaBar implements MetaBar {
-    init(): void {
-        // Do nothing
-    }
 
-    displayDisabled(): void {
-        // Do nothing
-    }
-
-    displayEnabled(): void {
-        // Do nothing
-    }
-
-    displayLoading(): void {
-        // Do nothing
-    }
-
-    hideLoadingIndicator(): void {
-        // Do nothing
-    }
-}

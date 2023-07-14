@@ -1,9 +1,9 @@
 import '../../../styles/decklist-content.scss';
-import {EnhancedView} from "../EnhancedView";
+import {EnhancedView} from "../_EnhancedView";
 import {GridSearchView} from "../GridSearchView";
-import {NoopView} from "../NoopView";
 import {ListDeckView} from "../ListDeckView";
 import {VisualDeckView} from "../VisualDeckView";
+import {NoopView} from "../noop/NoopView";
 
 let enhancedView: EnhancedView;
 
