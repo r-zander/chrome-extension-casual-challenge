@@ -8,7 +8,7 @@ const packageJson = require('./package.json');
 const baseManifest = require('./src/manifest.json');
 
 function modify(buffer) {
-    var manifestOverrides = JSON.parse(buffer.toString());
+    let manifestOverrides = JSON.parse(buffer.toString());
     manifestOverrides = Object.assign({}, baseManifest, manifestOverrides)
     manifestOverrides.version = packageJson.version;
     return JSON.stringify(manifestOverrides, null, 2);
@@ -18,8 +18,7 @@ module.exports = env => {
     return {
         entry: {
             'serviceWorker': './src/serviceWorker.ts',
-            'decklist-content-script': './src/content-script/decklist/index.ts',
-            'single-card-content-script': './src/content-script/single-card/index.ts',
+            'content-script': './src/content-script/index.ts',
             'popup': './src/popup.ts',
         },
         module: {

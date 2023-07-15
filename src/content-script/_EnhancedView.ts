@@ -177,7 +177,7 @@ export abstract class EnhancedView {
                 if (this.contentWasChecked) {
                     // Hide everything we added
                     this.onDisableChecks();
-                    let elementsToHideSelector = this.getElementsToHideSelector();
+                    const elementsToHideSelector = this.getElementsToHideSelector();
                     if (elementsToHideSelector != null) {
                         document.querySelectorAll(elementsToHideSelector).forEach(element => {
                             element.classList.add('hidden');
