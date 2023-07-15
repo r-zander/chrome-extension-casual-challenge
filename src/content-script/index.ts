@@ -1,9 +1,10 @@
-import '../../../styles/decklist-content.scss';
-import {EnhancedView} from "../EnhancedView";
-import {GridSearchView} from "../GridSearchView";
-import {NoopView} from "../NoopView";
-import {ListDeckView} from "../ListDeckView";
-import {VisualDeckView} from "../VisualDeckView";
+import '../../styles/content.scss';
+import {EnhancedView} from "./_EnhancedView";
+import {GridSearchView} from "./GridSearchView";
+import {ListDeckView} from "./ListDeckView";
+import {VisualDeckView} from "./VisualDeckView";
+import {NoopView} from "./noop/NoopView";
+import {FullCardView} from "./FullCardView";
 
 let enhancedView: EnhancedView;
 
@@ -14,7 +15,14 @@ function newEnhancedView(): EnhancedView {
             switch (modeSelector.value) {
                 case 'grid':
                     return new GridSearchView();
+                case 'full':
+                    return new FullCardView();
             }
+        }
+
+        const cardProfile = document.querySelector('#main > .card-profile');
+        if (cardProfile !== null) {
+            return new FullCardView();
         }
 
         return new NoopView();
@@ -28,6 +36,10 @@ function newEnhancedView(): EnhancedView {
         } else {
             return new NoopView();
         }
+    }
+
+    if (location.pathname.startsWith('/card')) {
+        return new FullCardView();
     }
 
     return new NoopView();

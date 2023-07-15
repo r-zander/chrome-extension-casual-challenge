@@ -1,4 +1,4 @@
-import {addGlobalClass} from "./EnhancedView";
+import {addGlobalClass} from "./_EnhancedView";
 import {AbstractDeckView} from "./AbstractDeckView";
 import {formatBudgetPoints} from "../common/formatting";
 import {FullCard} from "../common/card-representations";

@@ -34,26 +34,15 @@
     {
       "matches": [
         "https://scryfall.com/*/decks/*",
-        "https://scryfall.com/search?*"
-      ],
-      "run_at": "document_idle",
-      "css": [
-        "styles/decklist-content-script.css"
-      ],
-      "js": [
-        "decklist-content-script.js"
-      ]
-    },
-    {
-      "matches": [
+        "https://scryfall.com/search?*",
         "https://scryfall.com/card/*"
       ],
       "run_at": "document_idle",
       "css": [
-        "styles/single-card-content-script.css"
+        "styles/content-script.css"
       ],
       "js": [
-        "single-card-content-script.js"
+        "content-script.js"
       ]
     }
   ]
