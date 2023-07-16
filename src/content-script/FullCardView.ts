@@ -38,7 +38,7 @@ export class FullCardView extends EnhancedView {
       }
 
       this.cardLoader.register(cardId).then(fullCard => {
-        displayLegality(cardProfileElement, fullCard);
+        displayLegality(cardProfileElement, fullCard, this.displayExtended);
         displayBudgetPoints(cardProfileElement, fullCard.budgetPoints);
       });
     });
@@ -100,7 +100,7 @@ function displayBudgetPoints(cardProfileElement: HTMLElement, budgetPoints: numb
   lastPrintTable.insertAdjacentHTML('afterend', html);
 }
 
-function displayLegality(cardProfileElement: HTMLElement, card: FullCard): void {
+function displayLegality(cardProfileElement: HTMLElement, card: FullCard, displayExtended: boolean): void {
   if (isBasicLand(card)) {
     appendLegalityElement(
         cardProfileElement,
@@ -172,7 +172,7 @@ function displayLegality(cardProfileElement: HTMLElement, card: FullCard): void 
     return;
   }
 
-  if (this.displayExtended) {
+  if (displayExtended) {
     appendLegalityElement(
         cardProfileElement,
         'extended',

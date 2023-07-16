@@ -4,7 +4,7 @@ import {SerializableMap} from "../common/SerializableMap";
 import {CachedScryfallCard, CasualChallengeCard, FullCard, ScryfallCard} from "../common/card-representations";
 import {deserialize} from "../common/serialization";
 
-const DEBUG_LOG = true;
+const DEBUG_LOG = false;
 
 // 7 days aka 1 week (mostly)
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000;

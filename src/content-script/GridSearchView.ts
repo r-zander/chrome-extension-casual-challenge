@@ -1,16 +1,23 @@
 import {addGlobalClass, EnhancedView, removeGlobalClass} from "./_EnhancedView";
 import {StorageKeys, syncStorage} from "../common/storage";
-import {CheckMode, MetaBar} from "./decklist/types";
+import {CheckMode, GridMode, MetaBar} from "./decklist/types";
 import {SearchControls} from "./decklist/SearchControls";
 import {formatBudgetPoints} from "../common/formatting";
+import {NoopMetaBar} from "./noop/NoopMetaBar";
 
 export class GridSearchView extends EnhancedView {
-    private mode: CheckMode;
+    private readonly gridMode: GridMode;
+    private checkMode: CheckMode;
     private searchControls: SearchControls;
 
+    constructor(gridMode: GridMode) {
+        super();
+        this.gridMode = gridMode;
+    }
+
     public async onInit() {
-        this.mode = await syncStorage.get<CheckMode>(StorageKeys.SEARCH_CHECK_MODE, 'overlay');
-        switch (this.mode) {
+        this.checkMode = await syncStorage.get<CheckMode>(StorageKeys.SEARCH_CHECK_MODE, 'overlay');
+        switch (this.checkMode) {
             case 'overlay':
                 addGlobalClass('mode-search-images-overlay');
                 break;
@@ -21,7 +28,11 @@ export class GridSearchView extends EnhancedView {
     }
 
     protected createMetaBar(): MetaBar {
-        this.searchControls = new SearchControls(this.mode);
+        if (this.gridMode === 'sets') {
+            return new NoopMetaBar();
+        }
+
+        this.searchControls = new SearchControls(this.checkMode);
         this.searchControls.init();
 
         this.searchControls.setOnDisabledHandler(this.disableChecks.bind(this));
@@ -33,7 +44,7 @@ export class GridSearchView extends EnhancedView {
     }
 
     protected async shouldEnableChecks(): Promise<boolean> {
-        return this.mode !== 'disabled';
+        return this.checkMode !== 'disabled';
     }
 
     protected async checkDeck(): Promise<void> {

@@ -27,9 +27,9 @@ function isBannedInAnyFormat(card: FullCard) {
 
 export abstract class EnhancedView {
     private metaBar: MetaBar;
-    private displayExtended: boolean = false;
     protected contentWasChecked: boolean = false;
 
+    private _displayExtended: boolean = false;
     private _loadingTemplate: HTMLTemplateElement = null;
     private _legalTemplate: HTMLTemplateElement = null;
     private _notLegalTemplate: HTMLTemplateElement = null;
@@ -42,7 +42,7 @@ export abstract class EnhancedView {
         this.initMetaBar();
         if (await this.shouldEnableChecks()) {
             // TODO automatically adjust display when the value changes
-            this.displayExtended = await syncStorage.get(StorageKeys.DISPLAY_EXTENDED, false);
+            this._displayExtended = await syncStorage.get(StorageKeys.DISPLAY_EXTENDED, false);
             await this.checkDeck();
         } else {
             this.displayDisabled();
@@ -110,6 +110,10 @@ export abstract class EnhancedView {
         return this._cardLoader;
     }
 
+    protected get displayExtended(): boolean {
+        return this._displayExtended;
+    }
+
     protected createTemplate(cssClass: string, text: string, html: string = ''): string {
         return `<div class="legality-overlay ${cssClass}"></div>
 <span class="card-grid-item-count card-grid-item-legality ${cssClass}">${text}${html}</span>`;
@@ -152,7 +156,7 @@ export abstract class EnhancedView {
             return;
         }
 
-        if (this.displayExtended && card.banStatus === 'extended') {
+        if (this._displayExtended && card.banStatus === 'extended') {
             cardItem.append(this.extendedTemplate.content.cloneNode(true));
             cardItem.classList.add('extended');
             return;
@@ -194,8 +198,6 @@ export abstract class EnhancedView {
     protected abstract getElementsToHideSelector(): string | null;
 
     protected displayLoading() {
-        console.log('isEnabled', 'loading');
-
         // switch (contentMode) {
         //     case CONTENT_MODE_SEARCH_IMAGES:
         //         return;
@@ -205,8 +207,6 @@ export abstract class EnhancedView {
     }
 
     protected displayDisabled() {
-        console.log('isEnabled', false);
-
         // switch (contentMode) {
         //     case CONTENT_MODE_SEARCH_IMAGES:
         //         return;
@@ -216,8 +216,6 @@ export abstract class EnhancedView {
     }
 
     protected displayEnabled() {
-        console.log('isEnabled', true);
-
         // switch (contentMode) {
         //     case CONTENT_MODE_SEARCH_IMAGES:
         //         return;

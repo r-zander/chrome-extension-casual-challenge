@@ -35,7 +35,8 @@
       "matches": [
         "https://scryfall.com/*/decks/*",
         "https://scryfall.com/search?*",
-        "https://scryfall.com/card/*"
+        "https://scryfall.com/card/*",
+        "https://scryfall.com/sets/*"
       ],
       "run_at": "document_idle",
       "css": [

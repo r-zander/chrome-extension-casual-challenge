@@ -9,12 +9,13 @@ import {FullCardView} from "./FullCardView";
 let enhancedView: EnhancedView;
 
 function newEnhancedView(): EnhancedView {
-    if (location.pathname === '/search') {
+    const isSetPromoRoute = location.pathname.startsWith('/sets/');
+    if (location.pathname === '/search' || isSetPromoRoute) {
         const modeSelector = document.querySelector('select#as') as HTMLInputElement;
         if (modeSelector !== null) {
             switch (modeSelector.value) {
                 case 'grid':
-                    return new GridSearchView();
+                    return new GridSearchView(isSetPromoRoute ? 'sets' : 'search');
                 case 'full':
                     return new FullCardView();
             }
@@ -38,7 +39,7 @@ function newEnhancedView(): EnhancedView {
         }
     }
 
-    if (location.pathname.startsWith('/card')) {
+    if (location.pathname.startsWith('/card/')) {
         return new FullCardView();
     }
 
