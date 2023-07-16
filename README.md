@@ -34,7 +34,7 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 
 * `npm install`
 * `npm run build-chrome`
-* `upload.bat`
+* `upload[-environment].bat`
 * Visit https://chrome.google.com/webstore/devconsole/96b3f2ff-adde-4b86-a5ca-dd664792f43f/cbdgdonajjfilioojjocdijiadbijpfg/edit
 * Click "Prüfen lassen"
 
