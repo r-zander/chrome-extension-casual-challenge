@@ -15,6 +15,41 @@ class DeckEntry {
 }
 
 export class DeckStatistics {
+    private totalSection = new SectionStatistics;
+    private sections: { [key: string]: SectionStatistics } = {};
+
+     get cardCount(): number {
+        return this.totalSection.cardCount;
+    }
+
+    get budgetPoints(): number {
+        return this.totalSection.budgetPoints;
+    }
+
+    get banStatus(): "banned" | "extended" | null {
+        return this.totalSection.banStatus;
+    }
+
+    public getSection(section: string): SectionStatistics {
+         if (Object.prototype.hasOwnProperty.call(this.sections, section)) {
+             return this.sections[section];
+         }
+
+         throw `No section "${section}" found.`;
+    }
+
+    addEntry(card: FullCard, cardCount: number, section: string|null = null) {
+         this.totalSection.addEntry(card, cardCount);
+         if (section !== null) {
+             if (!Object.prototype.hasOwnProperty.call(this.sections, section)) {
+                 this.sections[section] = new SectionStatistics();
+             }
+             this.sections[section].addEntry(card, cardCount);
+         }
+    }
+}
+
+class SectionStatistics {
 
     private entries: DeckEntry[] = [];
     private _cardCount: number = 0;
