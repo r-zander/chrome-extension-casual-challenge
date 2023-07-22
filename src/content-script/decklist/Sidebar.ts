@@ -4,8 +4,12 @@ import {DeckStatistics} from "./DeckStatistics";
 import {MetaBar} from "./types";
 
 const sidebarClasses = {
+    PRICE: 'sidebar-prices-price',
+    TOTAL_PRICE: 'total-price',
     BUDGET_POINT_SUM: 'budget-point-sum',
     BUDGET_POINT_SHARE: 'budget-point-share',
+    BOARD_NAME: 'board-name',
+    BOARD_PRICE: 'board-price',
 }
 
 let isInit = false;
@@ -21,11 +25,15 @@ export class Sidebar implements MetaBar {
         sidebarTemplate.innerHTML = `
 <div class="sidebar-toolbox casual-challenge">
      <h2 class="sidebar-header">Casual Challenge</h2>
-     <span class="sidebar-prices-price hidden">
+     <span class="${sidebarClasses.PRICE} ${sidebarClasses.TOTAL_PRICE} hidden">
         <span class="currency-eur">Budget Points</span>
         <span class="currency-eur ${sidebarClasses.BUDGET_POINT_SUM}"></span>
      </span>
-     <span class="sidebar-prices-price hidden">
+     <span class="${sidebarClasses.PRICE} ${sidebarClasses.BOARD_PRICE} hidden">
+        <span class="currency-eur ${sidebarClasses.BOARD_NAME}">Board</span>
+        <span class="currency-eur ${sidebarClasses.BUDGET_POINT_SUM}"></span>
+     </span>
+     <span class="${sidebarClasses.PRICE} hidden">
         <span class="currency-usd">% of ${maxBP}</span>
         <span class="currency-usd ${sidebarClasses.BUDGET_POINT_SHARE}"></span>
      </span>
@@ -57,14 +65,29 @@ export class Sidebar implements MetaBar {
     }
 
     public renderDeckStatistics(deckStatistics: DeckStatistics): void {
-        const budgetPointSumElement = document.querySelector('.' + sidebarClasses.BUDGET_POINT_SUM);
+        const totalPriceElement = document.querySelector(`.${sidebarClasses.PRICE}.${sidebarClasses.TOTAL_PRICE}`);
+        const budgetPointSumElement = totalPriceElement.querySelector(`.${sidebarClasses.BUDGET_POINT_SUM}`);
         budgetPointSumElement.innerHTML = formatBudgetPoints(deckStatistics.budgetPoints);
-        budgetPointSumElement.parentElement.classList.remove('hidden');
+        totalPriceElement.classList.remove('hidden');
 
-        const budgetPointShareElement = document.querySelector('.' + sidebarClasses.BUDGET_POINT_SHARE);
+        const boardPricesElement = document.querySelector(`.${sidebarClasses.PRICE}.${sidebarClasses.BOARD_PRICE}`);
+        boardPricesElement.remove();
+        boardPricesElement.classList.remove('hidden');
+
+        const boardEntries = Object.entries(deckStatistics.boards)
+            .reverse(); // Reverse as entries are added on top of the list, i.e. inverted on dom generation
+        if (boardEntries.length > 1) { // If there is only one board, there is no need to display more details
+            for (const [boardName, boardStatistics] of boardEntries) {
+                const newBoardPricesElement = boardPricesElement.cloneNode(true) as HTMLElement;
+                totalPriceElement.insertAdjacentElement('afterend', newBoardPricesElement);
+                newBoardPricesElement.querySelector(`.${sidebarClasses.BOARD_NAME}`).textContent = boardName;
+                newBoardPricesElement.querySelector(`.${sidebarClasses.BUDGET_POINT_SUM}`).innerHTML = formatBudgetPoints(boardStatistics.budgetPoints);
+            }
+        }
+
+        const budgetPointShareElement = document.querySelector(`.${sidebarClasses.BUDGET_POINT_SHARE}`);
         budgetPointShareElement.textContent = formatBudgetPointsShare(deckStatistics.budgetPoints);
         budgetPointShareElement.parentElement.classList.remove('hidden');
-
     }
 
     public displayLoading(): void {

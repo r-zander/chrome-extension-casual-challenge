@@ -17,8 +17,9 @@ class DeckEntry {
 export class DeckStatistics {
     private totalSection = new SectionStatistics;
     private sections: { [key: string]: SectionStatistics } = {};
+    private _boards: { [key: string]: SectionStatistics } = {'Mainboard': new SectionStatistics()};
 
-     get cardCount(): number {
+    get cardCount(): number {
         return this.totalSection.cardCount;
     }
 
@@ -26,26 +27,47 @@ export class DeckStatistics {
         return this.totalSection.budgetPoints;
     }
 
-    get banStatus(): "banned" | "extended" | null {
+    get banStatus(): 'banned' | 'extended' | null {
         return this.totalSection.banStatus;
     }
 
     public getSection(section: string): SectionStatistics {
-         if (Object.prototype.hasOwnProperty.call(this.sections, section)) {
-             return this.sections[section];
-         }
+        if (Object.prototype.hasOwnProperty.call(this.sections, section)) {
+            return this.sections[section];
+        }
 
-         throw `No section "${section}" found.`;
+        throw `No section "${section}" found.`;
     }
 
-    addEntry(card: FullCard, cardCount: number, section: string|null = null) {
-         this.totalSection.addEntry(card, cardCount);
-         if (section !== null) {
-             if (!Object.prototype.hasOwnProperty.call(this.sections, section)) {
-                 this.sections[section] = new SectionStatistics();
-             }
-             this.sections[section].addEntry(card, cardCount);
-         }
+    get boards(): { [key: string]: SectionStatistics } {
+        return this._boards;
+    }
+
+    addEntry(card: FullCard, cardCount: number, section: string | null = null, sectionTitle: string | null = null) {
+        this.totalSection.addEntry(card, cardCount);
+        if (section !== null) {
+            if (!Object.prototype.hasOwnProperty.call(this.sections, section)) {
+                this.sections[section] = new SectionStatistics();
+            }
+            this.sections[section].addEntry(card, cardCount);
+        }
+
+        if (sectionTitle !== null && sectionTitle.includes('board')) {
+            let board = sectionTitle.trim();
+            board = board.replace(/\s*\(\d+\)$/, '');
+            // Manual fixes
+            switch (board) {
+                case 'Sideboard Companions':
+                    board = 'Sideboard';
+                    break;
+            }
+            if (!Object.prototype.hasOwnProperty.call(this._boards, board)) {
+                this._boards[board] = new SectionStatistics();
+            }
+            this._boards[board].addEntry(card, cardCount);
+        } else {
+            this._boards['Mainboard'].addEntry(card, cardCount);
+        }
     }
 }
 

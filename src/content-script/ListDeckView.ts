@@ -25,6 +25,12 @@ export class ListDeckView extends AbstractDeckView {
         document.querySelectorAll('.deck-list-section').forEach((deckListSection: HTMLElement, index) => {
             const sectionIdentifier = 'section-' + index;
             deckListSections[sectionIdentifier] = deckListSection;
+            let sectionTitle: string = null;
+
+            const titleElement = deckListSection.querySelector('.deck-list-section-title');
+            if (titleElement !== null) {
+                sectionTitle = titleElement.textContent;
+            }
             deckListSection.querySelectorAll('.deck-list-entry').forEach((deckListEntry: HTMLElement) => {
                 const cardId = deckListEntry.dataset.cardId;
                 const cardCount = parseInt(deckListEntry.querySelector('.deck-list-entry-count').textContent);
@@ -34,7 +40,7 @@ export class ListDeckView extends AbstractDeckView {
                 deckListEntry.classList.add('loading');
 
                 this.cardLoader.register(cardId).then(card => {
-                    this.deckStatistics.addEntry(card, cardCount, sectionIdentifier);
+                    this.deckStatistics.addEntry(card, cardCount, sectionIdentifier, sectionTitle);
                     this.appendToDeckListEntryRow(deckListEntry, card,);
 
                     const formattedBP = formatBudgetPoints(card.budgetPoints * cardCount);

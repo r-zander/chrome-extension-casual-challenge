@@ -10,6 +10,16 @@
     color: inherit;
 }
 
+.sidebar-prices-price.board-price {
+    > *:first-child {
+        margin-left: 1em;
+        font-size: 13px;
+    }
+    > *:last-child {
+        font-size: 12px;
+    }
+}
+
 .search-controls-casual-challenge {
     display: -webkit-box;
     display: -webkit-flex;
