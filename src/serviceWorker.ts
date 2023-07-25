@@ -19,6 +19,8 @@ const extendedBans = loadBans(RawExtendedBans);
 const loadedPriceIndex = 'B';
 const budgetPoints: Map<string, number> = loadBudgetPoints(CardPrices, loadedPriceIndex);
 
+console.info('Scryfall - Casual Challenge Checker: Service Worker running!');
+
 chrome.runtime.onInstalled.addListener(
     (details) => {
         if (['0.1.0', '0.2.0', '0.2.1', '0.3.0', '0.4.0', '0.5.0', '0.5.1', '0.5.2', '0.5.3'].includes(details.previousVersion)) {
@@ -30,6 +32,34 @@ chrome.runtime.onInstalled.addListener(
         }
     }
 )
+
+
+
+function script() {
+     const initAjaxInterceptors = () => {
+        console.log('initAjaxInterceptors');
+        // Add a response interceptor
+        Axios.interceptors.response.use(function (response) {
+            // Any status code that lie within the range of 2xx cause this function to trigger
+            // Do something with response data
+            console.log('Intercepted:', response);
+            return response;
+        });
+    }
+
+    console.log('Hello from the website!');
+
+    if (typeof Axios !== 'function') {
+        const interval = setInterval(() => {
+            if (typeof Axios === 'function') {
+                initAjaxInterceptors();
+                clearInterval(interval);
+            }
+        }, 10);
+    } else {
+        initAjaxInterceptors();
+    }
+}
 
 chrome.runtime.onMessage.addListener(
     (request, sender, sendResponse) => {
@@ -49,6 +79,16 @@ chrome.runtime.onMessage.addListener(
                 return;
             case 'get/cards/info':
                 sendCardsInfo(request.cardNames, sendResponse);
+                return;
+            case 'inject':
+                // chrome.tabs.query({ active: true, lastFocusedWindow: true }).then((tab) => {
+                    chrome.scripting.executeScript({
+                        // target: {tabId: tab[0].id},
+                        target: {tabId: sender.tab.id},
+                        func: script,
+                        world: 'MAIN'
+                    }).then(() => console.log("injected a function"));
+                // });
                 return;
             default:
                 console.error('Unknown action "' + request.action + '" in request.', request);
@@ -146,7 +186,6 @@ function addCardToMap<T>(map: Map<string, T>, cardName: string, value: T) {
 }
 
 function loadBudgetPoints(input: Record<string, Record<string, number>>, priceIndex: string): Map<string, number> {
-    console.log('loadBudgetPoints');
     const result = new Map<string, number>();
     for (const [cardName, prices] of Object.entries(input)) {
         addCardToMap(result, cardName, Math.round(prices[priceIndex] * 100));
