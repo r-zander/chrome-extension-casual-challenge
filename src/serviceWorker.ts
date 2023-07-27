@@ -4,6 +4,7 @@ import {
     BanListResponse,
     Bans,
     MultiCardsResponse,
+    ScryfallUUID,
     SingleBanResponse,
     SingleCardResponse
 } from './common/types';
@@ -13,6 +14,7 @@ import CardPrices from "../data/card-prices.json";
 import RawBans from "../data/bans.json";
 import RawExtendedBans from "../data/extended-bans.json";
 import {isBasicLand} from "./common/CasualChallengeLogic";
+import Port = chrome.runtime.Port;
 
 const bans = loadBans(RawBans);
 const extendedBans = loadBans(RawExtendedBans);
@@ -33,33 +35,118 @@ chrome.runtime.onInstalled.addListener(
     }
 )
 
+interface DeckBuilderConnection {
+    contentPort: Port
+    websitePort: Port,
+}
 
+const deckBuilderConnections: { [key: number]: DeckBuilderConnection } = {}
 
-function script() {
-     const initAjaxInterceptors = () => {
-        console.log('initAjaxInterceptors');
-        // Add a response interceptor
-        Axios.interceptors.response.use(function (response) {
-            // Any status code that lie within the range of 2xx cause this function to trigger
-            // Do something with response data
-            console.log('Intercepted:', response);
-            return response;
-        });
-    }
+function forwardMessageToContentScript(tabId: number, message: MessageType) {
+    deckBuilderConnections[tabId].contentPort.postMessage(message);
+}
 
-    console.log('Hello from the website!');
+export type DeckEntryUUID = string;
 
-    if (typeof Axios !== 'function') {
-        const interval = setInterval(() => {
-            if (typeof Axios === 'function') {
-                initAjaxInterceptors();
-                clearInterval(interval);
-            }
-        }, 10);
-    } else {
-        initAjaxInterceptors();
+type CardDigest = {
+    id: ScryfallUUID,
+    name: string,
+}
+
+type BoardEntry = {
+    id: DeckEntryUUID,
+    count: number,
+    card_digest: CardDigest | null,
+
+    cardInfo?: SingleCardResponse,
+}
+
+type MessageType = {
+    event: string,
+    payload: Record<string, unknown>
+}
+
+type DeckLoadedMessageType = {
+    event: 'deck.loaded',
+    payload: {
+        entries: { [key: string]: BoardEntry[] }
     }
 }
+
+type DeckEntryMessageType = {
+    event: 'card.added' | 'card.updated',
+    payload: BoardEntry
+}
+
+function addCardInfos(message: DeckLoadedMessageType | DeckEntryMessageType) {
+    if (message.event === 'deck.loaded') {
+        Object.values(message.payload.entries).forEach((boardEntries: BoardEntry[]) => {
+            boardEntries
+                .filter((boardEntry: BoardEntry) => boardEntry.card_digest !== null)
+                .forEach((boardEntry: BoardEntry) => {
+                    boardEntry.cardInfo = getCardInfo(boardEntry.card_digest.name);
+                });
+        });
+    } else if (message.event === 'card.added' || message.event === 'card.updated') {
+        const boardEntry = message.payload;
+        boardEntry.cardInfo = getCardInfo(boardEntry.card_digest.name);
+    }
+}
+
+chrome.runtime.onConnectExternal.addListener((port: Port) => {
+    console.log('onConnectExternal');
+    if (port.name === 'WebsiteScript.EditDeckView') {
+        console.log('Connected to website');
+        const tabId = port.sender.tab.id;
+        console.log('Tab Id', tabId);
+        if (Object.prototype.hasOwnProperty.call(deckBuilderConnections, tabId)) {
+            console.assert(
+                deckBuilderConnections[tabId].websitePort === null,
+                'There was already a websitePort bound for tab ' + tabId
+            );
+            deckBuilderConnections[tabId].websitePort = port;
+        } else {
+            deckBuilderConnections[tabId] = {
+                contentPort: null,
+                websitePort: port
+            }
+        }
+
+        port.onMessage.addListener(message => {
+            addCardInfos(message);
+            forwardMessageToContentScript(tabId, message);
+        });
+    }
+});
+
+chrome.runtime.onConnect.addListener((port: Port) => {
+    console.log('onConnect');
+    if (port.name === 'ContentScript.EditDeckView') {
+        console.log('Inject script to website');
+        console.log('Sender', port.sender);
+        const tabId = port.sender.tab.id;
+        if (Object.prototype.hasOwnProperty.call(deckBuilderConnections, tabId)) {
+            console.assert(
+                deckBuilderConnections[tabId].contentPort === null,
+                'There was already a contentPort bound for tab ' + tabId
+            );
+            deckBuilderConnections[tabId].contentPort = port;
+        } else {
+            deckBuilderConnections[tabId] = {
+                contentPort: port,
+                websitePort: null
+            }
+        }
+        chrome.scripting.executeScript({
+            // target: {tabId: tab[0].id},
+            target: {tabId: tabId},
+            // func: script.bind(this, chrome.runtime.id),
+            // func: script,
+            files: ['website-script.js'],
+            world: 'MAIN'
+        }).then(() => console.log('injected a function'));
+    }
+});
 
 chrome.runtime.onMessage.addListener(
     (request, sender, sendResponse) => {
@@ -81,14 +168,6 @@ chrome.runtime.onMessage.addListener(
                 sendCardsInfo(request.cardNames, sendResponse);
                 return;
             case 'inject':
-                // chrome.tabs.query({ active: true, lastFocusedWindow: true }).then((tab) => {
-                    chrome.scripting.executeScript({
-                        // target: {tabId: tab[0].id},
-                        target: {tabId: sender.tab.id},
-                        func: script,
-                        world: 'MAIN'
-                    }).then(() => console.log("injected a function"));
-                // });
                 return;
             default:
                 console.error('Unknown action "' + request.action + '" in request.', request);

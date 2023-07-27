@@ -51,44 +51,11 @@ function newEnhancedView(): EnhancedView {
     return new NoopView();
 }
 
-// function initAjaxInterceptors() {
-//     console.log('initAjaxInterceptors');
-//
-//     // Add a response interceptor
-//     Axios.interceptors.response.use(function (response) {
-//         // Any status code that lie within the range of 2xx cause this function to trigger
-//         // Do something with response data
-//         console.log(response);
-//         return response;
-//     });
-// }
-
-// function script() {
-//     console.log('Hello from the website!');
-// }
-
-//
-// function inject(fn: () => void) {
-//     const script = document.createElement('script')
-//     script.text = `(${fn.toString()})();`
-//     document.documentElement.appendChild(script)
-// }
-
-
 async function init() {
-    // if (typeof Axios !== 'function') {
-    //     const interval = setInterval(() => {
-    //         if (typeof Axios === 'function') {
-    //             initAjaxInterceptors();
-    //             clearInterval(interval);
-    //         }
-    //     }, 10);
-    // }
-
-    // inject(script)
-    chrome.runtime.sendMessage({action: 'inject'}).then(() => {
-        console.log('Called backend to inject');
-    });
+    const port = chrome.runtime.connect({name: 'ContentScript.EditDeckView'});
+    port.onMessage.addListener(message => {
+        console.log('Received message through port', message);
+    })
 
     enhancedView = newEnhancedView();
     await enhancedView.init();

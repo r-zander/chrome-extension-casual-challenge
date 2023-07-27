@@ -17,9 +17,11 @@ function modify(buffer) {
 module.exports = env => {
     return {
         entry: {
+            // TODO align naming
             'serviceWorker': './src/serviceWorker.ts',
             'content-script': './src/content-script/index.ts',
             'popup': './src/popup.ts',
+            'website-script': './src/WebsiteScript.ts'
         },
         module: {
             rules: [

@@ -26,8 +26,13 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://*.scryfall.com/"
+    "https://*.scryfall.com/*"
   ],
+  "externally_connectable": {
+    "matches": [
+      "https://*.scryfall.com/*"
+    ]
+  },
   "background": {
 
   },
