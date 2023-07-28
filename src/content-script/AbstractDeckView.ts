@@ -6,7 +6,6 @@ import {SerializableMap} from "../common/SerializableMap";
 import {DeckStatistics} from "./decklist/DeckStatistics";
 
 
-
 function getDeckId(): string {
     const pathElements = location.pathname.split('/');
     return pathElements[pathElements.length - 1];
@@ -40,9 +39,9 @@ export abstract class AbstractDeckView extends EnhancedView {
         }
 
         // Check for matching deck titles for auto-enable
-        const deckTitle = (document.querySelector('.deck-details-title') as HTMLElement).innerText;
+        const deckTitle = this.findDeckTitle();
         if (deckTitle.match(/Casual.{0,3}Challenge/i) !== null ||
-            deckTitle.includes('CC') /* Case-sensitive */) {
+            deckTitle.match(/\bCC\b/) !== null /* Case-sensitive */) {
             console.log('isCasualChallengeDeck', 'Deck Title matches');
             // Synchronously store that this deck should have its deck check enabled
             // to prevent unexpected behavior when the deck name changes
@@ -59,6 +58,10 @@ export abstract class AbstractDeckView extends EnhancedView {
         return false;
     }
 
+    protected findDeckTitle(): string {
+        return (document.querySelector('.deck-details-title') as HTMLElement).innerText;
+    }
+
     protected async storeCheckFlag(newValue: CheckMode): Promise<void> {
         return syncStorage.get<Map<string, CheckMode>>(StorageKeys.ENABLED_DECKS)
             .then(enabledDecks => {
@@ -72,7 +75,10 @@ export abstract class AbstractDeckView extends EnhancedView {
     }
 
     protected async checkDeck(): Promise<void> {
-        document.querySelector('.deck').classList.add('casual-challenge-deck');
+        const deckElement = document.querySelector('.deck');
+        if (deckElement !== null) {
+            deckElement.classList.add('casual-challenge-deck');
+        }
         this.deckStatistics = new DeckStatistics();
     }
 

@@ -242,6 +242,18 @@
     opacity: 60%;
 }
 
+.mode-deck-list {
+    .deckbuilder-sidebar {
+        width: 131px;
+    }
+}
+
+.deckbuilder-sidebar {
+    > ol + .deckbuilder-section-title-bar {
+        margin-top: 16px;
+    }
+}
+
 /**
  * ==============================================
  * Dot Flashing by Zongbin

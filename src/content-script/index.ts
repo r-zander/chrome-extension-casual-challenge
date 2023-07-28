@@ -6,6 +6,7 @@ import {VisualDeckView} from "./VisualDeckView";
 import {NoopView} from "./noop/NoopView";
 import {FullCardView} from "./FullCardView";
 import {AxiosStatic} from 'axios';
+import {EditDeckView} from "./EditDeckView";
 
 let enhancedView: EnhancedView;
 
@@ -39,6 +40,8 @@ function newEnhancedView(): EnhancedView {
             return new ListDeckView();
         } else if (document.querySelectorAll('.card-grid').length !== 0) {
             return new VisualDeckView();
+        } else if (location.pathname.endsWith('/build')) {
+            return new EditDeckView();
         } else {
             return new NoopView();
         }
@@ -52,11 +55,6 @@ function newEnhancedView(): EnhancedView {
 }
 
 async function init() {
-    const port = chrome.runtime.connect({name: 'ContentScript.EditDeckView'});
-    port.onMessage.addListener(message => {
-        console.log('Received message through port', message);
-    })
-
     enhancedView = newEnhancedView();
     await enhancedView.init();
 }
