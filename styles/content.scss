@@ -58,22 +58,24 @@
     }
 }
 
-.deck-list-section-entries .card-legality {
-    border-top: none;
-    padding: 0;
-    margin-left: 5px;
-}
+.deck-list-entry,
+.deckbuilder-entry {
+    .card-legality {
+        border-top: none;
+        padding: 0;
+        margin-left: 5px;
+        > dd {
+            padding: 0 6px;
+            line-height: 20px;
+            height: 20px;
 
-.deck-list-section-entries .card-legality > dd {
-    padding: 0 6px;
-    line-height: 20px;
-    height: 20px;
-
-    min-width: 42px;
-    max-width: 42px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+            min-width: 42px;
+            max-width: 42px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
 }
 
 .card-legality > dd.extended {
@@ -84,9 +86,16 @@
     background-color: #D79167;
 }
 
-/* Reduce price width a bit - in casual prices should be pretty low anyways */
-.casual-challenge-deck .deck-list-entry-axial-data {
-    min-width: 2.75em !important;
+.casual-challenge-deck {
+    .deck-list-entry-axial-data {
+        // Reduce price width a bit - in casual prices should be pretty low anyways
+        min-width: 2.75em !important;
+    }
+
+    .deckbuilder-entry-information {
+        // Ensure overlapping elements are readable by re-applying the page background
+        background-color: #F5F6F7;
+    }
 }
 
 /* Imitate Scryfall button */
@@ -230,16 +239,18 @@
     background-color: #AEAEAE;
 }
 
-.mode-search-images-overlay .legality-overlay.loading,
-.mode-search-images-overlay .card-grid-item-card > .card-grid-item-legality.loading,
-.mode-search-images-overlay .legality-overlay.legal,
-.mode-search-images-overlay .card-grid-item-card > .card-grid-item-legality.legal {
-    display: none;
-}
+.mode-search-images-overlay {
+    .legality-overlay.loading,
+    .card-grid-item-card > .card-grid-item-legality.loading,
+    .legality-overlay.legal,
+    .card-grid-item-card > .card-grid-item-legality.legal {
+        display: none;
+    }
 
-.mode-search-images-overlay .card-grid-item-card.not-legal > .card-grid-item-card-faces,
-.mode-search-images-overlay .card-grid-item-card.banned > .card-grid-item-card-faces {
-    opacity: 60%;
+    .card-grid-item-card.not-legal > .card-grid-item-card-faces,
+    .card-grid-item-card.banned > .card-grid-item-card-faces {
+        opacity: 60%;
+    }
 }
 
 .mode-deck-list {

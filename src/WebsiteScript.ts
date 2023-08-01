@@ -15,7 +15,6 @@ function initAjaxInterceptors(): void {
     console.log('initAjaxInterceptors');
     // Add a response interceptor
     Axios.interceptors.response.use(function (response) {
-        console.log('Intercepted:', response);
         const url = new URL(response.config.url);
         const method = response.config.method.toUpperCase();
 

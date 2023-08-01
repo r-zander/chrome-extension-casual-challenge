@@ -41,7 +41,7 @@ export class ListDeckView extends AbstractDeckView {
 
                 this.cardLoader.register(cardId).then(card => {
                     this.deckStatistics.addEntry(card, cardCount, sectionIdentifier, sectionTitle);
-                    this.appendToDeckListEntryRow(deckListEntry, card,);
+                    this.modifyCardItem(deckListEntry, card);
 
                     const formattedBP = formatBudgetPoints(card.budgetPoints * cardCount);
                     deckListEntry.querySelector('.deck-list-entry-axial-data').innerHTML =
@@ -72,17 +72,14 @@ export class ListDeckView extends AbstractDeckView {
         }
     }
 
-    protected override createTemplate(cssClass: string, text: string, html?: string): string {
+    protected override createTemplate(cssClass: string, text: string, html: string = ''): string {
         return `<dl class="card-legality">
 <dd class="${cssClass}" title="${text}">${text}${html}</dd></dl>`;
     }
 
-    /**
-     * Just override `modifyCardItem`
-     */
-    private appendToDeckListEntryRow(deckListEntry: HTMLElement, card: FullCard) {
+    protected override modifyCardItem(deckListEntry: HTMLElement, card: FullCard) {
         deckListEntry.querySelector('.card-legality').remove();
-        this.modifyCardItem(deckListEntry, card);
+        super.modifyCardItem(deckListEntry, card);
     }
 
     protected getElementsToHideSelector(): string {

@@ -1,4 +1,4 @@
-import {FullCard} from "../../common/card-representations";
+import {StatisticsCard} from "../../common/card-representations";
 
 class DeckEntry {
     public readonly cardName: string;
@@ -43,7 +43,7 @@ export class DeckStatistics {
         return this._boards;
     }
 
-    addEntry(card: FullCard, cardCount: number, section: string | null = null, sectionTitle: string | null = null) {
+    addEntry(card: StatisticsCard, cardCount: number, section: string | null = null, sectionTitle: string | null = null) {
         this.totalSection.addEntry(card, cardCount);
         if (section !== null) {
             if (!Object.prototype.hasOwnProperty.call(this.sections, section)) {
@@ -90,7 +90,7 @@ class SectionStatistics {
         return this._banStatus;
     }
 
-    addEntry(card: FullCard, cardCount: number) {
+    addEntry(card: StatisticsCard, cardCount: number) {
         this.entries.push(new DeckEntry(card.name, cardCount, card.budgetPoints, card.banStatus));
         this._cardCount += cardCount;
         this._budgetPoints += (cardCount * card.budgetPoints);

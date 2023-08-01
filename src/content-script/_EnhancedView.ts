@@ -26,6 +26,7 @@ function isBannedInAnyFormat(card: FullCard) {
 }
 
 export abstract class EnhancedView {
+    // TODO maybe make generic
     private metaBar: MetaBar;
     protected contentWasChecked: boolean = false;
 
@@ -129,7 +130,7 @@ export abstract class EnhancedView {
         this.modifyCardItem(cardItem, card);
     }
 
-    protected modifyCardItem(cardItem: HTMLElement, card: FullCard,) {
+    protected modifyCardItem(cardItem: HTMLElement, card: FullCard) {
         cardItem.classList.remove('loading');
 
         if (isBasicLand(card)) {

@@ -1,9 +1,9 @@
 import {EnhancedView} from "./_EnhancedView";
-import {Sidebar} from "./decklist/Sidebar";
-import {CheckMode, MetaBar} from "./decklist/types";
+import {CheckMode, MetaBar, StatisticsAwareMetaBar} from "./decklist/types";
 import {StorageKeys, syncStorage} from "../common/storage";
 import {SerializableMap} from "../common/SerializableMap";
 import {DeckStatistics} from "./decklist/DeckStatistics";
+import {ViewSidebar} from "./decklist/ViewSidebar";
 
 
 function getDeckId(): string {
@@ -12,7 +12,7 @@ function getDeckId(): string {
 }
 
 export abstract class AbstractDeckView extends EnhancedView {
-    protected sidebar: Sidebar;
+    protected sidebar: StatisticsAwareMetaBar;
     protected deckStatistics: DeckStatistics;
 
     protected async shouldEnableChecks(): Promise<boolean> {
@@ -20,11 +20,12 @@ export abstract class AbstractDeckView extends EnhancedView {
     }
 
     protected createMetaBar(): MetaBar {
-        this.sidebar = new Sidebar();
+        const sidebar = new ViewSidebar();
+        this.sidebar = sidebar;
         this.sidebar.init();
 
-        this.sidebar.addDisabledButtonClickHandler(this.enableChecks.bind(this));
-        this.sidebar.addEnabledButtonClickHandler(this.disableChecks.bind(this));
+        sidebar.addDisabledButtonClickHandler(this.enableChecks.bind(this));
+        sidebar.addEnabledButtonClickHandler(this.disableChecks.bind(this));
 
         return this.sidebar;
     }

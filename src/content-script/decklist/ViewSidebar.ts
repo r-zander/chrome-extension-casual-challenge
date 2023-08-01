@@ -1,7 +1,7 @@
 import {formatBudgetPoints, formatBudgetPointsShare} from "../../common/formatting";
 import {MAX_BUDGET_POINTS} from "../../common/constants";
 import {DeckStatistics} from "./DeckStatistics";
-import {MetaBar} from "./types";
+import {StatisticsAwareMetaBar} from "./types";
 
 const sidebarClasses = {
     PRICE: 'sidebar-prices-price',
@@ -18,7 +18,7 @@ let loadingIndicator: HTMLElement,
     disabledButton: HTMLElement,
     enabledButton: HTMLElement;
 
-export class Sidebar implements MetaBar {
+export class ViewSidebar implements StatisticsAwareMetaBar {
     public init(): void {
         const sidebarTemplate = document.createElement('template');
         const maxBP = formatBudgetPoints(MAX_BUDGET_POINTS);

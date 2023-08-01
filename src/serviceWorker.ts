@@ -3,8 +3,8 @@ import {
     BanFormats,
     BanListResponse,
     Bans,
+    MessageType,
     MultiCardsResponse,
-    ScryfallUUID,
     SingleBanResponse,
     SingleCardResponse
 } from './common/types';
@@ -46,53 +46,6 @@ function forwardMessageToContentScript(tabId: number, message: MessageType) {
     deckBuilderConnections[tabId].contentPort.postMessage(message);
 }
 
-export type DeckEntryUUID = string;
-
-type CardDigest = {
-    id: ScryfallUUID,
-    name: string,
-}
-
-type BoardEntry = {
-    id: DeckEntryUUID,
-    count: number,
-    card_digest: CardDigest | null,
-
-    cardInfo?: SingleCardResponse,
-}
-
-type MessageType = {
-    event: string,
-    payload: Record<string, unknown>
-}
-
-type DeckLoadedMessageType = {
-    event: 'deck.loaded',
-    payload: {
-        entries: { [key: string]: BoardEntry[] }
-    }
-}
-
-type DeckEntryMessageType = {
-    event: 'card.added' | 'card.updated',
-    payload: BoardEntry
-}
-
-function addCardInfos(message: DeckLoadedMessageType | DeckEntryMessageType) {
-    if (message.event === 'deck.loaded') {
-        Object.values(message.payload.entries).forEach((boardEntries: BoardEntry[]) => {
-            boardEntries
-                .filter((boardEntry: BoardEntry) => boardEntry.card_digest !== null)
-                .forEach((boardEntry: BoardEntry) => {
-                    boardEntry.cardInfo = getCardInfo(boardEntry.card_digest.name);
-                });
-        });
-    } else if (message.event === 'card.added' || message.event === 'card.updated') {
-        const boardEntry = message.payload;
-        boardEntry.cardInfo = getCardInfo(boardEntry.card_digest.name);
-    }
-}
-
 chrome.runtime.onConnectExternal.addListener((port: Port) => {
     console.log('onConnectExternal');
     if (port.name === 'WebsiteScript.EditDeckView') {
@@ -113,7 +66,6 @@ chrome.runtime.onConnectExternal.addListener((port: Port) => {
         }
 
         port.onMessage.addListener(message => {
-            addCardInfos(message);
             forwardMessageToContentScript(tabId, message);
         });
     }

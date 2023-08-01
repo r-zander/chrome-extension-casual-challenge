@@ -112,7 +112,7 @@ export enum Layout {
 }
 
 
-export class FullCard extends CachedScryfallCard {
+export class FullCard extends CachedScryfallCard implements StatisticsCard {
     public readonly budgetPoints: number;
     public readonly banStatus: string;
     public readonly banFormats: Map<keyof typeof Format, number>;
@@ -130,4 +130,10 @@ export class FullCard extends CachedScryfallCard {
         this.banStatus = ccCard.banStatus;
         this.banFormats = ccCard.banFormats;
     }
+}
+
+export interface StatisticsCard {
+    readonly name: string,
+    readonly budgetPoints: number;
+    readonly banStatus: string;
 }
