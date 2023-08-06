@@ -4,7 +4,7 @@ import {formatBudgetPoints} from "../common/formatting";
 import {FullCard} from "../common/card-representations";
 import {MetaBar} from "./decklist/types";
 import {EditSidebar} from "./decklist/EditSidebar";
-import {BoardEntry, DeckEntryMessageType, DeckLoadedMessageType} from "../common/types";
+import {BoardEntry, CardDigest, DeckEntryMessageType, DeckEntryUUID, MessageType} from "../common/types";
 
 type Entry = {
     entryId: string,
@@ -12,17 +12,18 @@ type Entry = {
         identifier: string,
         title: string
     },
-    element: HTMLElement
+    element: HTMLElement,
+    cardDigest?: CardDigest,
 }
 
 export class EditDeckView extends AbstractDeckView {
 
-    private entries: { [key: string]: Entry } = {};
+    private entries: { [key: DeckEntryUUID]: Entry } = {};
     private deckListSections: { [key: string]: HTMLElement } = {};
 
     public async onInit(): Promise<void> {
         const port = chrome.runtime.connect({name: 'ContentScript.EditDeckView'});
-        port.onMessage.addListener((message: DeckLoadedMessageType | DeckEntryMessageType) => {
+        port.onMessage.addListener((message: MessageType) => {
             console.log('Received message through port', message);
 
             switch (message.event) {
@@ -35,6 +36,7 @@ export class EditDeckView extends AbstractDeckView {
                                     if (!Object.prototype.hasOwnProperty.call(this.entries, boardEntry.id)) return;
 
                                     const deckEntry = this.entries[boardEntry.id];
+                                    deckEntry.cardDigest = boardEntry.card_digest;
 
                                     this.deckStatistics.addEntry(card, boardEntry.count, deckEntry.section.identifier, deckEntry.section.title);
                                     this.modifyCardItem(deckEntry.element, card);
@@ -48,6 +50,10 @@ export class EditDeckView extends AbstractDeckView {
                 case 'card.added':
                     // TODO
                     break;
+                case 'card.removed':
+                    const deckEntry = this.entries[message.payload.id];
+                    this.deckStatistics.removeEntry(deckEntry.cardDigest.name, deckEntry.section.identifier, deckEntry.section.title);
+                    break;
                 case 'card.updated': {
                     const deckEntryMessage = message as DeckEntryMessageType;
                     this.cardLoader.loadSingle(deckEntryMessage.payload.card_digest.id)
@@ -58,8 +64,11 @@ export class EditDeckView extends AbstractDeckView {
                             const deckEntry = this.entries[entryId];
 
                             // TODO change entry
-                            // this.deckStatistics.addEntry(card, deckEntryMessage.payload.count, deckEntry.section.identifier, deckEntry.section.title);
+                            this.deckStatistics.updateEntry(card, deckEntryMessage.payload.count, deckEntry.section.identifier, deckEntry.section.title);
                             this.modifyCardItem(deckEntry.element, card);
+
+                            this.sidebar.renderDeckStatistics(this.deckStatistics);
+                            this.renderSectionStatistics(this.deckListSections);
 
                             deckEntry.element.querySelector('.deck-list-entry-axial-data > .currency-eur').innerHTML =
                                 formatBudgetPoints(card.budgetPoints * deckEntryMessage.payload.count);
@@ -115,13 +124,12 @@ export class EditDeckView extends AbstractDeckView {
         // }
 
         const mutationObserver = new MutationObserver((mutationList, observer) => {
+            console.log('EditDeckView.onMutationObserved');
             for (let index = 0; index < mutationList.length; index++) {
-
                 mutationList[index].addedNodes.forEach((addedNode: HTMLElement) => {
                     if (!addedNode.classList.contains('deckbuilder-section')) return;
 
                     const deckListSection = addedNode;
-                    console.log('EditDeckView on deckListSection', deckListSection);
                     const sectionIdentifier = 'section-' + index;
                     this.deckListSections[sectionIdentifier] = deckListSection;
                     let sectionTitle: string = null;
@@ -131,9 +139,7 @@ export class EditDeckView extends AbstractDeckView {
                         sectionTitle = titleElement.textContent;
                     }
                     deckListSection.querySelectorAll('.deckbuilder-entry').forEach((deckListEntry: HTMLElement) => {
-                        console.log('EditDeckView on deckListEntry', deckListEntry);
                         const entryId = deckListEntry.dataset.entry;
-
 
                         const informationElement = deckListEntry.querySelector('.deckbuilder-entry-information');
                         informationElement.insertAdjacentHTML('beforeend',

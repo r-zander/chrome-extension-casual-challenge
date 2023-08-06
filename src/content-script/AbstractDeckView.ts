@@ -1,9 +1,10 @@
 import {EnhancedView} from "./_EnhancedView";
-import {CheckMode, MetaBar, StatisticsAwareMetaBar} from "./decklist/types";
+import {CheckMode, MetaBar} from "./decklist/types";
 import {StorageKeys, syncStorage} from "../common/storage";
 import {SerializableMap} from "../common/SerializableMap";
 import {DeckStatistics} from "./decklist/DeckStatistics";
 import {ViewSidebar} from "./decklist/ViewSidebar";
+import {StatisticsAwareMetaBar} from "./decklist/StatisticsAwareMetaBar";
 
 
 function getDeckId(): string {

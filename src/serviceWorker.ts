@@ -68,6 +68,10 @@ chrome.runtime.onConnectExternal.addListener((port: Port) => {
         port.onMessage.addListener(message => {
             forwardMessageToContentScript(tabId, message);
         });
+
+        port.onDisconnect.addListener(() => {
+            console.log('ServiceWorker: WebsiteScript.EditDeckView port disconnected.');
+        });
     }
 });
 
@@ -97,6 +101,10 @@ chrome.runtime.onConnect.addListener((port: Port) => {
             files: ['website-script.js'],
             world: 'MAIN'
         }).then(() => console.log('injected a function'));
+
+        port.onDisconnect.addListener(() => {
+            console.log('ServiceWorker: ContentScript.EditDeckView port disconnected.');
+        });
     }
 });
 

@@ -1,7 +1,7 @@
 import {formatBudgetPoints, formatBudgetPointsShare} from "../../common/formatting";
 import {MAX_BUDGET_POINTS} from "../../common/constants";
 import {DeckStatistics} from "./DeckStatistics";
-import {StatisticsAwareMetaBar} from "./types";
+import {META_BAR_TITLE, statisticHtml, StatisticsAwareMetaBar} from "./StatisticsAwareMetaBar";
 
 const sidebarClasses = {
     PRICE: 'sidebar-prices-price',
@@ -18,28 +18,20 @@ let loadingIndicator: HTMLElement,
     disabledButton: HTMLElement,
     enabledButton: HTMLElement;
 
-export class ViewSidebar implements StatisticsAwareMetaBar {
-    public init(): void {
+export class ViewSidebar extends StatisticsAwareMetaBar {
+    constructor() {
+        super(true);
+    }
+
+    public override init(): void {
         const sidebarTemplate = document.createElement('template');
-        const maxBP = formatBudgetPoints(MAX_BUDGET_POINTS);
         sidebarTemplate.innerHTML = `
 <div class="sidebar-toolbox casual-challenge">
-     <h2 class="sidebar-header">Casual Challenge</h2>
-     <span class="${sidebarClasses.PRICE} ${sidebarClasses.TOTAL_PRICE} hidden">
-        <span class="currency-eur">Budget Points</span>
-        <span class="currency-eur ${sidebarClasses.BUDGET_POINT_SUM}"></span>
-     </span>
-     <span class="${sidebarClasses.PRICE} ${sidebarClasses.BOARD_PRICE} hidden">
-        <span class="currency-eur ${sidebarClasses.BOARD_NAME}">Board</span>
-        <span class="currency-eur ${sidebarClasses.BUDGET_POINT_SUM}"></span>
-     </span>
-     <span class="${sidebarClasses.PRICE} hidden">
-        <span class="currency-usd">% of ${maxBP}</span>
-        <span class="currency-usd ${sidebarClasses.BUDGET_POINT_SHARE}"></span>
-     </span>
-     <div class="casual-challenge-checks-loading button-n tiny"><div class="dot-flashing"></div></div>
-     <button class="casual-challenge-checks-disabled button-n tiny hidden">Enable checks</button>
-     <button class="casual-challenge-checks-enabled button-n primary tiny hidden">Disable checks</button>
+    <h2 class="sidebar-header">${META_BAR_TITLE}</h2>
+    ${statisticHtml}
+    <div class="casual-challenge-checks-loading button-n tiny"><div class="dot-flashing"></div></div>
+    <button class="casual-challenge-checks-disabled button-n tiny hidden">Enable checks</button>
+    <button class="casual-challenge-checks-enabled button-n primary tiny hidden">Disable checks</button>
 </div>`;
 
         // The sidebar already is set to display 'loading', no need to adjust the mode
@@ -62,32 +54,6 @@ export class ViewSidebar implements StatisticsAwareMetaBar {
 
     public hideLoadingIndicator(): void {
         loadingIndicator.classList.add('hidden');
-    }
-
-    public renderDeckStatistics(deckStatistics: DeckStatistics): void {
-        const totalPriceElement = document.querySelector(`.${sidebarClasses.PRICE}.${sidebarClasses.TOTAL_PRICE}`);
-        const budgetPointSumElement = totalPriceElement.querySelector(`.${sidebarClasses.BUDGET_POINT_SUM}`);
-        budgetPointSumElement.innerHTML = formatBudgetPoints(deckStatistics.budgetPoints);
-        totalPriceElement.classList.remove('hidden');
-
-        const boardPricesElement = document.querySelector(`.${sidebarClasses.PRICE}.${sidebarClasses.BOARD_PRICE}`);
-        boardPricesElement.remove();
-        boardPricesElement.classList.remove('hidden');
-
-        const boardEntries = Object.entries(deckStatistics.boards)
-            .reverse(); // Reverse as entries are added on top of the list, i.e. inverted on dom generation
-        if (boardEntries.length > 1) { // If there is only one board, there is no need to display more details
-            for (const [boardName, boardStatistics] of boardEntries) {
-                const newBoardPricesElement = boardPricesElement.cloneNode(true) as HTMLElement;
-                totalPriceElement.insertAdjacentElement('afterend', newBoardPricesElement);
-                newBoardPricesElement.querySelector(`.${sidebarClasses.BOARD_NAME}`).textContent = boardName;
-                newBoardPricesElement.querySelector(`.${sidebarClasses.BUDGET_POINT_SUM}`).innerHTML = formatBudgetPoints(boardStatistics.budgetPoints);
-            }
-        }
-
-        const budgetPointShareElement = document.querySelector(`.${sidebarClasses.BUDGET_POINT_SHARE}`);
-        budgetPointShareElement.textContent = formatBudgetPointsShare(deckStatistics.budgetPoints);
-        budgetPointShareElement.parentElement.classList.remove('hidden');
     }
 
     public displayLoading(): void {

@@ -71,10 +71,11 @@ export type BoardEntry = {
     card_digest: CardDigest | null,
 }
 
-export type MessageType = {
-    event: string,
-    payload: Record<string, unknown>
-}
+export type MessageType =
+    DeckLoadedMessageType
+    | DeckEntryMessageType
+    | DeckEntryReplacedMessageType
+    | DeckEntryRemovedMessageType;
 
 export type DeckLoadedMessageType = {
     event: 'deck.loaded',
@@ -86,4 +87,16 @@ export type DeckLoadedMessageType = {
 export type DeckEntryMessageType = {
     event: 'card.added' | 'card.updated',
     payload: BoardEntry
+}
+
+export type DeckEntryReplacedMessageType = {
+    event: 'card.replaced',
+    payload: BoardEntry
+}
+
+export type DeckEntryRemovedMessageType = {
+    event: 'card.removed',
+    payload: {
+        id: DeckEntryUUID
+    }
 }
