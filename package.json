@@ -3,9 +3,9 @@
   "version": "0.10.0",
   "description": "Checks deck lists on scryfall.com if they are legal for the 'Casual Challenge', a custom Magic the Gathering format created by XieLong and Janosch.exe.",
   "scripts": {
-    "start": "webpack --watch --config webpack.dev.js --env manifest=./src/manifest-chrome.json",
-    "build-chrome": "webpack --config webpack.prod.js --env manifest=./src/manifest-chrome.json",
-    "build-firefox": "webpack --config webpack.prod.js --env manifest=./src/manifest-firefox.json",
+    "start": "webpack --watch --config webpack.dev.js --env manifest=./src/manifest-chrome.json extId=iflbbacoehadmpmngkkmfmlanadjihjm",
+    "build-chrome": "webpack --config webpack.prod.js --env manifest=./src/manifest-chrome.json extId=cbdgdonajjfilioojjocdijiadbijpfg",
+    "build-firefox": "webpack --config webpack.prod.js --env manifest=./src/manifest-firefox.json extId=addon@casual-challenge.org",
     "package-firefox": "web-ext build --source-dir=dist --artifacts-dir=dist/firefox",
     "lint": "eslint --ext .ts,.js --max-warnings=0 .",
     "prettier": "prettier --write"

@@ -42,38 +42,44 @@ interface DeckBuilderConnection {
 
 const deckBuilderConnections: { [key: number]: DeckBuilderConnection } = {}
 
+chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+    const tabId = sender.tab.id;
+    forwardMessageToContentScript(tabId, message);
+    sendResponse({status: 'Accepted'});
+});
+
 function forwardMessageToContentScript(tabId: number, message: MessageType) {
     deckBuilderConnections[tabId].contentPort.postMessage(message);
 }
 
-chrome.runtime.onConnectExternal.addListener((port: Port) => {
-    console.log('onConnectExternal');
-    if (port.name === 'WebsiteScript.EditDeckView') {
-        console.log('Connected to website');
-        const tabId = port.sender.tab.id;
-        console.log('Tab Id', tabId);
-        if (Object.prototype.hasOwnProperty.call(deckBuilderConnections, tabId)) {
-            console.assert(
-                deckBuilderConnections[tabId].websitePort === null,
-                'There was already a websitePort bound for tab ' + tabId
-            );
-            deckBuilderConnections[tabId].websitePort = port;
-        } else {
-            deckBuilderConnections[tabId] = {
-                contentPort: null,
-                websitePort: port
-            }
-        }
-
-        port.onMessage.addListener(message => {
-            forwardMessageToContentScript(tabId, message);
-        });
-
-        port.onDisconnect.addListener(() => {
-            console.log('ServiceWorker: WebsiteScript.EditDeckView port disconnected.');
-        });
-    }
-});
+// chrome.runtime.onConnectExternal.addListener((port: Port) => {
+//     console.log('onConnectExternal');
+//     if (port.name === 'WebsiteScript.EditDeckView') {
+//         console.log('Connected to website');
+//         const tabId = port.sender.tab.id;
+//         console.log('Tab Id', tabId);
+//         if (Object.prototype.hasOwnProperty.call(deckBuilderConnections, tabId)) {
+//             console.assert(
+//                 deckBuilderConnections[tabId].websitePort === null,
+//                 'There was already a websitePort bound for tab ' + tabId
+//             );
+//             deckBuilderConnections[tabId].websitePort = port;
+//         } else {
+//             deckBuilderConnections[tabId] = {
+//                 contentPort: null,
+//                 websitePort: port
+//             }
+//         }
+//
+//         port.onMessage.addListener(message => {
+//             forwardMessageToContentScript(tabId, message);
+//         });
+//
+//         port.onDisconnect.addListener(() => {
+//             console.log('ServiceWorker: WebsiteScript.EditDeckView port disconnected.');
+//         });
+//     }
+// });
 
 chrome.runtime.onConnect.addListener((port: Port) => {
     console.log('onConnect');

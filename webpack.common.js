@@ -1,5 +1,6 @@
 const path = require('path');
 
+const webpack = require('webpack');
 const DotenvPlugin = require('dotenv-webpack');
 const ESLintPlugin = require('eslint-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
@@ -64,6 +65,9 @@ module.exports = env => {
                         }
                     }
                 ],
+            }),
+            new webpack.DefinePlugin({
+                __EXTENSION_ID__: JSON.stringify(env.extId)
             }),
         ],
     };

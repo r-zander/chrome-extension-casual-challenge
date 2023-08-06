@@ -18,11 +18,11 @@ export class DeckStatistics {
     }
 
     public getSection(section: string): SectionStatistics {
-        if (Object.prototype.hasOwnProperty.call(this.sections, section)) {
-            return this.sections[section];
+        if (!Object.prototype.hasOwnProperty.call(this.sections, section)) {
+            this.sections[section] = new SectionStatistics();
         }
 
-        throw `No section "${section}" found.`;
+        return this.sections[section];
     }
 
     get boards(): { [key: string]: SectionStatistics } {
@@ -101,13 +101,13 @@ class SectionStatistics {
     get cardCount(): number {
         return Object.values(this.entries)
             .map(entry => entry.count)
-            .reduce((sum, entryCount) => sum + entryCount);
+            .reduce((sum, entryCount) => sum + entryCount, 0);
     }
 
     get budgetPoints(): number {
         return Object.values(this.entries)
             .map(entry => entry.budgetPoints * entry.count)
-            .reduce((sum, budgetPoints) => sum + budgetPoints);
+            .reduce((sum, budgetPoints) => sum + budgetPoints, 0);
     }
 
     get banStatus(): "banned" | "extended" | null {

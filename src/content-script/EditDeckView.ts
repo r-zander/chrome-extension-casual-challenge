@@ -45,10 +45,10 @@ export class EditDeckView extends AbstractDeckView {
 
                     this.cardLoader.start().then(() => {
                         this.sidebar.renderDeckStatistics(this.deckStatistics);
-                        this.renderSectionStatistics(this.deckListSections);
+                        this.renderSectionStatistics();
                         this.displayEnabled();
                         document.querySelectorAll(`.deckbuilder-entry-information.loading .card-legality,
-                .deckbuilder-entry-information.loading .deck-list-entry-axial-data`)
+                        .deckbuilder-entry-information.loading .deck-list-entry-axial-data`)
                             .forEach(element => {
                                 element.parentElement.style.display = 'none';
                             })
@@ -94,7 +94,7 @@ export class EditDeckView extends AbstractDeckView {
                             this.applyLoadedValues(deckEntry, deckEntryMessage.payload, card);
 
                             this.sidebar.renderDeckStatistics(this.deckStatistics);
-                            this.renderSectionStatistics(this.deckListSections);
+                            this.renderSectionStatistics();
                         });
                     break;
                 }
@@ -106,7 +106,7 @@ export class EditDeckView extends AbstractDeckView {
                     this.deckStatistics.removeEntry(deckEntry.cardDigest.name, deckEntry.section.identifier, deckEntry.section.title);
 
                     this.sidebar.renderDeckStatistics(this.deckStatistics);
-                    this.renderSectionStatistics(this.deckListSections);
+                    this.renderSectionStatistics();
                     break;
                 }
                 case 'card.updated': {
@@ -114,7 +114,7 @@ export class EditDeckView extends AbstractDeckView {
                     new CardLoader().loadSingle(deckEntryMessage.payload.card_digest.id)
                         .then(card => {
                             const entryId = deckEntryMessage.payload.id;
-                            if (!Object.prototype.hasOwnProperty.call(this.entries, entryId)) return;
+                            // if (!Object.prototype.hasOwnProperty.call(this.entries, entryId)) return;
 
                             const deckEntry = this.entries[entryId];
 
@@ -125,10 +125,30 @@ export class EditDeckView extends AbstractDeckView {
                                 formatBudgetPoints(card.budgetPoints * deckEntryMessage.payload.count);
 
                             this.sidebar.renderDeckStatistics(this.deckStatistics);
-                            this.renderSectionStatistics(this.deckListSections);
+                            this.renderSectionStatistics();
                         });
                     break;
                 }
+                case 'card.replaced':{
+                    const deckEntryMessage = message as DeckEntryMessageType;
+                    new CardLoader().loadSingle(deckEntryMessage.payload.card_digest.id)
+                        .then(card => {
+                            const entryId = deckEntryMessage.payload.id;
+                            // if (!Object.prototype.hasOwnProperty.call(this.entries, entryId)) return;
+
+                            const deckEntry = this.entries[entryId];
+
+                            if (deckEntry.cardDigest !== undefined) {
+                                this.deckStatistics.removeEntry(deckEntry.cardDigest.name, deckEntry.section.identifier, deckEntry.section.title);
+                            }
+                            this.applyLoadedValues(deckEntry,deckEntryMessage.payload,card );
+
+                            this.sidebar.renderDeckStatistics(this.deckStatistics);
+                            this.renderSectionStatistics();
+                        });
+                    break;
+                }
+
             }
         });
 
@@ -187,9 +207,11 @@ export class EditDeckView extends AbstractDeckView {
                     let sectionTitle: string = null;
 
                     const titleElement = sectionElement.querySelector('.deckbuilder-section-title');
-                    if (titleElement !== null) {
-                        sectionTitle = titleElement.textContent;
-                    }
+                    sectionTitle = titleElement.textContent;
+                    titleElement.insertAdjacentHTML('afterend',
+                        `<span class="deckbuilder-section-budget-points deckbuilder-section-count"></span>`);
+
+
                     sectionElement.querySelectorAll('.deckbuilder-entry').forEach((deckListEntry: HTMLElement) => {
                         const entryId = deckListEntry.dataset.entry;
                         this.enhanceDeckListEntry(deckListEntry, entryId, sectionIdentifier, sectionTitle);
@@ -231,19 +253,11 @@ export class EditDeckView extends AbstractDeckView {
         return entry;
     }
 
-    private renderSectionStatistics(deckListSections: { [key: string]: HTMLElement }): void {
-        // TODO
-        // for (const [sectionIdentifier, deckListSection] of Object.entries(deckListSections)) {
-        //     const titleElement = deckListSection.querySelector('.deck-list-section-title');
-        //     if (titleElement === null) continue;
-        //
-        //     titleElement.insertAdjacentHTML(
-        //         'beforeend',
-        //         ' <span class="budget-points">(' +
-        //         formatBudgetPoints(this.deckStatistics.getSection(sectionIdentifier).budgetPoints) +
-        //         ' BP)</span>'
-        //     );
-        // }
+    private renderSectionStatistics(): void {
+        for (const [sectionIdentifier, deckListSection] of Object.entries(this.deckListSections)) {
+            const bpElement = deckListSection.querySelector('.deckbuilder-section-budget-points');
+            bpElement.innerHTML = formatBudgetPoints(this.deckStatistics.getSection(sectionIdentifier).budgetPoints) + ' BP';
+        }
     }
 
     protected override createTemplate(cssClass: string, text: string, html: string = ''): string {

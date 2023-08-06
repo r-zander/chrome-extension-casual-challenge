@@ -74,7 +74,6 @@ export type BoardEntry = {
 export type MessageType =
     DeckLoadedMessageType
     | DeckEntryMessageType
-    | DeckEntryReplacedMessageType
     | DeckEntryRemovedMessageType;
 
 export type DeckLoadedMessageType = {
@@ -85,12 +84,7 @@ export type DeckLoadedMessageType = {
 }
 
 export type DeckEntryMessageType = {
-    event: 'card.added' | 'card.updated',
-    payload: BoardEntry
-}
-
-export type DeckEntryReplacedMessageType = {
-    event: 'card.replaced',
+    event: 'card.added' | 'card.updated' | 'card.replaced',
     payload: BoardEntry
 }
 
