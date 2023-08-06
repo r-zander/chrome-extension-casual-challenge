@@ -1,16 +1,4 @@
-import {formatBudgetPoints, formatBudgetPointsShare} from "../../common/formatting";
-import {MAX_BUDGET_POINTS} from "../../common/constants";
-import {DeckStatistics} from "./DeckStatistics";
 import {META_BAR_TITLE, statisticHtml, StatisticsAwareMetaBar} from "./StatisticsAwareMetaBar";
-
-const sidebarClasses = {
-    PRICE: 'sidebar-prices-price',
-    TOTAL_PRICE: 'total-price',
-    BUDGET_POINT_SUM: 'budget-point-sum',
-    BUDGET_POINT_SHARE: 'budget-point-share',
-    BOARD_NAME: 'board-name',
-    BOARD_PRICE: 'board-price',
-}
 
 let isInit = false;
 

@@ -5,6 +5,7 @@ import {FullCard} from "../common/card-representations";
 import {MetaBar} from "./decklist/types";
 import {EditSidebar} from "./decklist/EditSidebar";
 import {BoardEntry, CardDigest, DeckEntryMessageType, DeckEntryUUID, MessageType} from "../common/types";
+import {CardLoader} from "./CardLoader";
 
 type Entry = {
     entryId: string,
@@ -26,8 +27,9 @@ export class EditDeckView extends AbstractDeckView {
         port.onMessage.addListener((message: MessageType) => {
             console.log('Received message through port', message);
 
+            // TODO split into 1 method per event
             switch (message.event) {
-                case 'deck.loaded':
+                case 'deck.loaded': {
                     Object.values(message.payload.entries).forEach((boardEntries: BoardEntry[]) => {
                         boardEntries
                             .filter((boardEntry: BoardEntry) => boardEntry.card_digest !== null)
@@ -36,61 +38,111 @@ export class EditDeckView extends AbstractDeckView {
                                     if (!Object.prototype.hasOwnProperty.call(this.entries, boardEntry.id)) return;
 
                                     const deckEntry = this.entries[boardEntry.id];
-                                    deckEntry.cardDigest = boardEntry.card_digest;
-
-                                    this.deckStatistics.addEntry(card, boardEntry.count, deckEntry.section.identifier, deckEntry.section.title);
-                                    this.modifyCardItem(deckEntry.element, card);
-
-                                    deckEntry.element.querySelector('.deck-list-entry-axial-data > .currency-eur').innerHTML =
-                                        formatBudgetPoints(card.budgetPoints * boardEntry.count);
+                                    this.applyLoadedValues(deckEntry, boardEntry, card);
                                 });
                             });
                     });
+
+                    this.cardLoader.start().then(() => {
+                        this.sidebar.renderDeckStatistics(this.deckStatistics);
+                        this.renderSectionStatistics(this.deckListSections);
+                        this.displayEnabled();
+                        document.querySelectorAll(`.deckbuilder-entry-information.loading .card-legality,
+                .deckbuilder-entry-information.loading .deck-list-entry-axial-data`)
+                            .forEach(element => {
+                                element.parentElement.style.display = 'none';
+                            })
+                        this.contentWasChecked = true;
+                    });
                     break;
-                case 'card.added':
-                    // TODO
+                }
+                case 'card.added': {
+                    const deckEntryMessage = message as DeckEntryMessageType;
+                    new CardLoader().loadSingle(deckEntryMessage.payload.card_digest.id)
+                        .then(card => {
+                            const entryId = deckEntryMessage.payload.id;
+                            // Step 1 - Find and enhance deck list entry
+                            const deckListEntry = document.querySelector(`[data-entry="${entryId}"]`) as HTMLElement;
+                            if (deckListEntry === null) {
+                                console.warn('Card Added - unable to find deck list entry.', entryId);
+                                return;
+                            }
+
+                            const sectionElement = deckListEntry.closest('.deckbuilder-section') as HTMLElement;
+                            // O(n) reverse sectionIdentifier lookup
+                            let sectionIdentifier: string = null;
+                            for (const [keySectionIdentifier, valueSectionElement] of Object.entries(this.deckListSections)) {
+                                if (sectionElement === valueSectionElement) {
+                                    sectionIdentifier = keySectionIdentifier;
+                                    break;
+                                }
+                            }
+
+                            if (sectionIdentifier === null) {
+                                console.warn('Card Added - unable to find section identifier.', entryId, sectionElement);
+                            }
+
+                            const titleElement = sectionElement.querySelector('.deckbuilder-section-title');
+                            let sectionTitle: string = null;
+                            if (titleElement !== null) {
+                                sectionTitle = titleElement.textContent;
+                            }
+
+                            const deckEntry = this.enhanceDeckListEntry(deckListEntry, entryId, sectionIdentifier, sectionTitle);
+
+                            // Step 2 - Apply loaded card values
+                            this.applyLoadedValues(deckEntry, deckEntryMessage.payload, card);
+
+                            this.sidebar.renderDeckStatistics(this.deckStatistics);
+                            this.renderSectionStatistics(this.deckListSections);
+                        });
                     break;
-                case 'card.removed':
-                    const deckEntry = this.entries[message.payload.id];
+                }
+                case 'card.removed': {
+                    const entryId = message.payload.id;
+                    if (!Object.prototype.hasOwnProperty.call(this.entries, entryId)) return;
+
+                    const deckEntry = this.entries[entryId];
                     this.deckStatistics.removeEntry(deckEntry.cardDigest.name, deckEntry.section.identifier, deckEntry.section.title);
+
+                    this.sidebar.renderDeckStatistics(this.deckStatistics);
+                    this.renderSectionStatistics(this.deckListSections);
                     break;
+                }
                 case 'card.updated': {
                     const deckEntryMessage = message as DeckEntryMessageType;
-                    this.cardLoader.loadSingle(deckEntryMessage.payload.card_digest.id)
+                    new CardLoader().loadSingle(deckEntryMessage.payload.card_digest.id)
                         .then(card => {
                             const entryId = deckEntryMessage.payload.id;
                             if (!Object.prototype.hasOwnProperty.call(this.entries, entryId)) return;
 
                             const deckEntry = this.entries[entryId];
 
-                            // TODO change entry
                             this.deckStatistics.updateEntry(card, deckEntryMessage.payload.count, deckEntry.section.identifier, deckEntry.section.title);
                             this.modifyCardItem(deckEntry.element, card);
 
-                            this.sidebar.renderDeckStatistics(this.deckStatistics);
-                            this.renderSectionStatistics(this.deckListSections);
-
                             deckEntry.element.querySelector('.deck-list-entry-axial-data > .currency-eur').innerHTML =
                                 formatBudgetPoints(card.budgetPoints * deckEntryMessage.payload.count);
+
+                            this.sidebar.renderDeckStatistics(this.deckStatistics);
+                            this.renderSectionStatistics(this.deckListSections);
                         });
                     break;
                 }
             }
-
-            this.cardLoader.start().then(() => {
-                this.sidebar.renderDeckStatistics(this.deckStatistics);
-                this.renderSectionStatistics(this.deckListSections);
-                this.displayEnabled();
-                document.querySelectorAll(`.deckbuilder-entry-information.loading .card-legality,
-                .deckbuilder-entry-information.loading .deck-list-entry-axial-data`)
-                    .forEach(element => {
-                        element.parentElement.style.display = 'none';
-                    })
-                this.contentWasChecked = true;
-            });
         });
 
         addGlobalClass('mode-deck-list');
+    }
+
+    private applyLoadedValues(deckEntry: Entry, boardEntry: BoardEntry, card: FullCard) {
+        deckEntry.cardDigest = boardEntry.card_digest;
+
+        this.deckStatistics.addEntry(card, boardEntry.count, deckEntry.section.identifier, deckEntry.section.title);
+        this.modifyCardItem(deckEntry.element, card);
+
+        deckEntry.element.querySelector('.deck-list-entry-axial-data > .currency-eur').innerHTML =
+            formatBudgetPoints(card.budgetPoints * boardEntry.count);
     }
 
     protected override createMetaBar(): MetaBar {
@@ -129,36 +181,18 @@ export class EditDeckView extends AbstractDeckView {
                 mutationList[index].addedNodes.forEach((addedNode: HTMLElement) => {
                     if (!addedNode.classList.contains('deckbuilder-section')) return;
 
-                    const deckListSection = addedNode;
+                    const sectionElement = addedNode;
                     const sectionIdentifier = 'section-' + index;
-                    this.deckListSections[sectionIdentifier] = deckListSection;
+                    this.deckListSections[sectionIdentifier] = sectionElement;
                     let sectionTitle: string = null;
 
-                    const titleElement = deckListSection.querySelector('.deckbuilder-section-title');
+                    const titleElement = sectionElement.querySelector('.deckbuilder-section-title');
                     if (titleElement !== null) {
                         sectionTitle = titleElement.textContent;
                     }
-                    deckListSection.querySelectorAll('.deckbuilder-entry').forEach((deckListEntry: HTMLElement) => {
+                    sectionElement.querySelectorAll('.deckbuilder-entry').forEach((deckListEntry: HTMLElement) => {
                         const entryId = deckListEntry.dataset.entry;
-
-                        const informationElement = deckListEntry.querySelector('.deckbuilder-entry-information');
-                        informationElement.insertAdjacentHTML('beforeend',
-                            `<span class="deckbuilder-entry-status">
-    <span class="deck-list-entry-axial-data">
-        <span class="currency-eur"></span>
-    </span>
-</span>`);
-                        informationElement.append(this.loadingTemplate.content.cloneNode(true));
-                        informationElement.classList.add('loading');
-
-                        this.entries[entryId] = {
-                            entryId: entryId,
-                            section: {
-                                identifier: sectionIdentifier,
-                                title: sectionTitle
-                            },
-                            element: informationElement as HTMLElement
-                        }
+                        this.enhanceDeckListEntry(deckListEntry, entryId, sectionIdentifier, sectionTitle);
                     });
                 });
             }
@@ -171,6 +205,30 @@ export class EditDeckView extends AbstractDeckView {
             childList: true,
             subtree: true
         });
+    }
+
+    private enhanceDeckListEntry(deckListEntry: HTMLElement, entryId: string, sectionIdentifier: string, sectionTitle: string): Entry {
+        const informationElement = deckListEntry.querySelector('.deckbuilder-entry-information');
+        informationElement.insertAdjacentHTML('beforeend', `
+<span class="deckbuilder-entry-status">
+    <span class="deck-list-entry-axial-data">
+        <span class="currency-eur"></span>
+    </span>
+</span>`);
+        informationElement.append(this.loadingTemplate.content.cloneNode(true));
+        informationElement.classList.add('loading');
+
+        const entry = {
+            entryId: entryId,
+            section: {
+                identifier: sectionIdentifier,
+                title: sectionTitle
+            },
+            element: informationElement as HTMLElement
+        };
+        this.entries[entryId] = entry;
+
+        return entry;
     }
 
     private renderSectionStatistics(deckListSections: { [key: string]: HTMLElement }): void {

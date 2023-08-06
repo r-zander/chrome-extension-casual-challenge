@@ -59,5 +59,10 @@ async function init() {
     await enhancedView.init();
 }
 
-// noinspection JSIgnoredPromiseFromCall
-init();
+// With `runAt : "document_idle"` it's necessary to make sure the DOM is ready before we start enhancing it
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    // noinspection JSIgnoredPromiseFromCall
+    init();
+} else {
+    document.addEventListener('DOMContentLoaded', init);
+}

@@ -28,6 +28,8 @@ function initAjaxInterceptors(): void {
         const url = new URL(response.config.url);
         const method = response.config.method.toUpperCase();
 
+        console.log('WebsiteScript: Intercepted response.', method, url.pathname);
+
 //      GET https://api.scryfall.com/decks/9628efae-930c-4297-8756-4d95a34484b9?sf=true
         if (method === 'GET' &&
             matchesPath(url, `^/decks/${uuidPattern}$`)

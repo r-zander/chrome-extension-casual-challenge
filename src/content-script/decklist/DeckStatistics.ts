@@ -55,13 +55,19 @@ export class DeckStatistics {
     }
 
     removeEntry(name: string, section: string | null = null, sectionTitle: string | null = null) {
-        this.totalSection.removeEntry(name);
         if (section !== null) {
             if (Object.prototype.hasOwnProperty.call(this.sections, section)) {
-                this.sections[section].removeEntry(name);
+                const removedEntry = this.sections[section].removeEntry(name);
+                this.totalSection.addEntry({
+                    name: removedEntry.cardName,
+                    banStatus: removedEntry.banStatus,
+                    budgetPoints: removedEntry.budgetPoints
+                }, -removedEntry.count);
             } else {
                 console.warn('DeckStatistics: Tried to remove card from non-existent section.', section, name);
             }
+        } else {
+            this.totalSection.removeEntry(name);
         }
 
         this.findBoard(sectionTitle).removeEntry(name);
@@ -112,6 +118,7 @@ class SectionStatistics {
         if (Object.prototype.hasOwnProperty.call(this.entries, card.name)) {
             this.entries[card.name].add(cardCount);
         } else {
+            console.assert(cardCount > 0, 'Unexpected card count <= 0');
             this.entries[card.name] = new DeckEntry(card.name, cardCount, card.budgetPoints, card.banStatus);
         }
 
@@ -142,13 +149,19 @@ class SectionStatistics {
         // No need to update the banStatus as its the same based on the card
     }
 
-    removeEntry(name: string) {
+    /**
+     * @param name
+     * @return the removed DeckEntry
+     */
+    removeEntry(name: string): DeckEntry {
         if (!Object.prototype.hasOwnProperty.call(this.entries, name)) {
             console.warn('SectionStatistics: Tried to remove non-existent card.', name);
             return;
         }
 
+        const entry = this.entries[name];
         delete this.entries[name];
+        return entry;
     }
 }
 
