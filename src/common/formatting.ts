@@ -1,4 +1,4 @@
-import {MAX_BUDGET_POINTS} from "./constants";
+import {MAX_BUDGET_POINTS} from "./casualChallengeLogic";
 
 const shortPercentageFormatGt100 = new Intl.NumberFormat('en-US', {
     style: 'percent',

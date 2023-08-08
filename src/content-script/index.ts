@@ -1,20 +1,21 @@
-import '../../styles/content.scss';
-import {EnhancedView} from "./_EnhancedView";
-import {GridSearchView} from "./GridSearchView";
-import {ListDeckView} from "./ListDeckView";
-import {VisualDeckView} from "./VisualDeckView";
-import {NoopView} from "./noop/NoopView";
-import {FullCardView} from "./FullCardView";
+import './content.scss';
+import {EnhancedView} from "./views/enhancedView";
+import {GridSearchView} from "./views/search/grid/gridSearchView";
+import {ListDeckView} from "./views/deck/view/list/listDeckView";
+import {VisualDeckView} from "./views/deck/view/visual/visualDeckView";
+import {NoopView} from "./views/noop/noopView";
+import {FullCardView} from "./views/full-card/fullCardView";
 import {AxiosStatic} from 'axios';
-import {EditDeckView} from "./EditDeckView";
+import {EditDeckView} from "./views/deck/edit/editDeckView";
+import {MetaBar} from "./views/metaBar";
 
-let enhancedView: EnhancedView;
+let enhancedView: EnhancedView<MetaBar>;
 
 declare global {
     const Axios: AxiosStatic;
 }
 
-function newEnhancedView(): EnhancedView {
+function newEnhancedView(): EnhancedView<MetaBar> {
     const isSetPromoRoute = location.pathname.startsWith('/sets/');
     if (location.pathname === '/search' || isSetPromoRoute) {
         const modeSelector = document.querySelector('select#as') as HTMLInputElement;

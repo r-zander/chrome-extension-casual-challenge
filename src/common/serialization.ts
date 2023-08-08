@@ -1,4 +1,4 @@
-import {SerializableMap} from "./SerializableMap";
+import {SerializableMap} from "./serializableMap";
 
 export function deserialize<I, O>(raw: I): O {
     if (typeof raw !== 'object') {
