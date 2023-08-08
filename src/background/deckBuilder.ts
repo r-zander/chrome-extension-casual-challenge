@@ -26,13 +26,11 @@ function init() {
             );
             deckBuilderContentScriptPorts[tabId] = port;
             chrome.scripting.executeScript({
-                // target: {tabId: tab[0].id},
                 target: {tabId: tabId},
-                // func: script.bind(this, chrome.runtime.id),
-                // func: script,
                 files: ['deck-builder-website-script.js'],
                 world: 'MAIN'
-            }).then(() => console.log('injected a function'));
+            }).then(() => console.log('Injected deck-builder-website-script.js'))
+                .catch(reason => console.error('Error injecting deck-builder-website-script.js.', reason));
 
             port.onDisconnect.addListener(() => {
                 console.log('ServiceWorker: ContentScript.EditDeckView port disconnected.');

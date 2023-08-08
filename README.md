@@ -1,6 +1,6 @@
 # Scryfall - Casual Challenge Checker
 
-Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a custom MtG format created by Raoul Zander and Janik Nissen.
+Checks cards and lists on scryfall.com if they are legal for the 'Casual Challenge' a custom MtG format created by Raoul Zander and Janik Nissen.
 
 ## Features
 
@@ -8,8 +8,8 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 - Shows Budget Points and percentage of Budget Share
 - Supported views
   - Single card view
-  - Deck list view (visual and list)
-  - Search view (only images)
+  - Deck view (list, visual, edit mode)
+  - Search view (images and full mode)
 
 ## Development
 
@@ -18,6 +18,14 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 * Windows 10 (22H2)
 * Node.js v18.15.0
 * npm 9.6.4
+
+### Build Chrome Extension
+
+* `npm install`
+* `npm run build-chrome`
+* `upload[-environment].bat`
+* Visit https://chrome.google.com/webstore/devconsole/96b3f2ff-adde-4b86-a5ca-dd664792f43f/cbdgdonajjfilioojjocdijiadbijpfg/edit
+* Click "Prüfen lassen"
 
 ### Build Firefox Add-On
 
@@ -29,14 +37,6 @@ Checks decklists on scryfall.com if they are legal for the 'Casual Challenge' a 
 * Upload the zip file
 * Firefox wants to have the source files
   * ![img.png](readme-firefox-source-zip.png)
-
-### Build Chrome Extension
-
-* `npm install`
-* `npm run build-chrome`
-* `upload[-environment].bat`
-* Visit https://chrome.google.com/webstore/devconsole/96b3f2ff-adde-4b86-a5ca-dd664792f43f/cbdgdonajjfilioojjocdijiadbijpfg/edit
-* Click "Prüfen lassen"
 
 ## Credits
 
