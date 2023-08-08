@@ -23,11 +23,10 @@ cardPrices = {}
 def getPricesWhithinTimeRange(pricesPerDay):
 	pricesWithinTimeRange = {}
 	for price in pricesPerDay:
-		dateNumber = 0
 		x = price.split('-')
 		# TODO suspicious
-		dateNumber = int(x[0]) * 10000 + int(x[1]) * 100 + int(
-			x[2])  # Converting a date string 2022-02-01 into the number 20220201 for comparisons
+		# Converting a date string 2022-02-01 into the number 20220201 for comparisons
+		dateNumber = int(x[0]) * 10000 + int(x[1]) * 100 + int(x[2])
 		if dateNumber >= earliestDate and dateNumber < latestDate:
 			pricesWithinTimeRange[dateNumber] = (pricesPerDay[price])
 	return pricesWithinTimeRange
@@ -90,24 +89,26 @@ def checkForAnomalies(pricesPerPrintings, cardName, uuidAttributes, isDebug=Fals
 				allPricesMatch = False
 				break
 		if allPricesMatch:
-			if isDebug:
-				if uuid.endswith('-foil'):
-					print('Price anomaly for ' + cardName + ' FOIL (' + str(
-						uuidAttributes[uuid.replace('-foil', '')]) + '): All prices are ' + str(knownPrice))
-				else:
-					print(
-						'Price anomaly for ' + cardName + ' (' + str(uuidAttributes[uuid]) + '): All prices are ' + str(
-							knownPrice))
+			# if isDebug:
+			# 	if uuid.endswith('-foil'):
+			# 		print('Price anomaly for ' + cardName + ' FOIL (' + str(
+			# 			uuidAttributes[uuid.replace('-foil', '')]) + '): All prices are ' + str(knownPrice))
+			# 	else:
+			# 		print(
+			# 			'Price anomaly for ' + cardName + ' (' + str(uuidAttributes[uuid]) + '): All prices are ' + str(
+			# 				knownPrice))
 			uuidsToBeRemoved.append(uuid)
 
-	# Dangerous, see https://docs.google.com/spreadsheets/d/1LKQm2lRDXAFBWJAtGFYlzsqE7Rgx00aA11vpXpDU7DU/edit#gid=429538483 "New 2"
-	for uuid in uuidsToBeRemoved:
-		pricesPerPrintings.pop(uuid)
+	if len(pricesPerPrintings) > len(uuidsToBeRemoved):
+		for uuid in uuidsToBeRemoved:
+			pricesPerPrintings.pop(uuid)
+	else:
+		if isDebug: print('For ' + cardName + ' all prices had anomalies.')
 
 
 def calculatePricesForCard(cardName, uuidAttributes, isDebug=False):
-	if isDebug: print('calculatePricesForCard ' + cardName)
-	if isDebug: print('UUIDs and Attributes: ' + str(uuidAttributes))
+	# if isDebug: print('calculatePricesForCard ' + cardName)
+	# if isDebug: print('UUIDs and Attributes: ' + str(uuidAttributes))
 	rawCardPrices = {}
 	calculatedAveragePrices = {}
 	for printingPriceUUID, attributes in uuidAttributes.items():
@@ -127,12 +128,12 @@ def calculatePricesForCard(cardName, uuidAttributes, isDebug=False):
 			rawCardPrices[printingPriceUUID] = getPricesWhithinTimeRange(cardmarketRetailPrice['normal'])
 		if attributes['hasFoil'] == True and 'foil' in cardmarketRetailPrice:
 			rawCardPrices[printingPriceUUID + '-foil'] = getPricesWhithinTimeRange(cardmarketRetailPrice['foil'])
-	if isDebug: print('rawCardPrices:' + str(rawCardPrices))
-	# checkForAnomalies(rawCardPrices, cardName, uuidAttributes, isDebug)
+	# if isDebug: print('rawCardPrices:' + str(rawCardPrices))
+	checkForAnomalies(rawCardPrices, cardName, uuidAttributes, isDebug)
 	calculatedAveragePrices['A'] = round(getCheapestPrintAverage(rawCardPrices), 2)
 	calculatedAveragePrices['B'] = round(getCheapestPerDayAverage(rawCardPrices), 2)
 	cardPrices[cardName] = calculatedAveragePrices
-	if isDebug: print('calculatedAveragePrices: ' + str(calculatedAveragePrices))
+	# if isDebug: print('calculatedAveragePrices: ' + str(calculatedAveragePrices))
 
 
 def getDecklistPrice(decklist, mode='A', isDebug=False):
@@ -218,7 +219,7 @@ print('Done building Card Dictionary: ' + str(len(allCards)))
 # getDecklistPrice(allCards, 'A', True)
 
 print('Calculating budget points')
-getDecklistPrice(allCards)
+getDecklistPrice(allCards) # , 'A', True)
 
 print('Writing card-prices.json')
 with open(outputPath, 'w', encoding='utf-8') as f:
