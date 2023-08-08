@@ -1,14 +1,21 @@
-import '../../styles/content.scss';
-import {EnhancedView} from "./_EnhancedView";
-import {GridSearchView} from "./GridSearchView";
-import {ListDeckView} from "./ListDeckView";
-import {VisualDeckView} from "./VisualDeckView";
-import {NoopView} from "./noop/NoopView";
-import {FullCardView} from "./FullCardView";
+import './content.scss';
+import {EnhancedView} from "./views/enhancedView";
+import {GridSearchView} from "./views/search/grid/gridSearchView";
+import {ListDeckView} from "./views/deck/view/list/listDeckView";
+import {VisualDeckView} from "./views/deck/view/visual/visualDeckView";
+import {NoopView} from "./views/noop/noopView";
+import {FullCardView} from "./views/full-card/fullCardView";
+import {AxiosStatic} from 'axios';
+import {EditDeckView} from "./views/deck/edit/editDeckView";
+import {MetaBar} from "./views/metaBar";
 
-let enhancedView: EnhancedView;
+let enhancedView: EnhancedView<MetaBar>;
 
-function newEnhancedView(): EnhancedView {
+declare global {
+    const Axios: AxiosStatic;
+}
+
+function newEnhancedView(): EnhancedView<MetaBar> {
     const isSetPromoRoute = location.pathname.startsWith('/sets/');
     if (location.pathname === '/search' || isSetPromoRoute) {
         const modeSelector = document.querySelector('select#as') as HTMLInputElement;
@@ -34,6 +41,8 @@ function newEnhancedView(): EnhancedView {
             return new ListDeckView();
         } else if (document.querySelectorAll('.card-grid').length !== 0) {
             return new VisualDeckView();
+        } else if (location.pathname.endsWith('/build')) {
+            return new EditDeckView();
         } else {
             return new NoopView();
         }
@@ -51,5 +60,10 @@ async function init() {
     await enhancedView.init();
 }
 
-// noinspection JSIgnoredPromiseFromCall
-init();
+// With `runAt : "document_idle"` it's necessary to make sure the DOM is ready before we start enhancing it
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    // noinspection JSIgnoredPromiseFromCall
+    init();
+} else {
+    document.addEventListener('DOMContentLoaded', init);
+}

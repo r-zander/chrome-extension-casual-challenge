@@ -1,9 +1,11 @@
 const path = require('path');
 
+const webpack = require('webpack');
 const DotenvPlugin = require('dotenv-webpack');
 const ESLintPlugin = require('eslint-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const packageJson = require('./package.json');
 const baseManifest = require('./src/manifest.json');
 
@@ -17,9 +19,10 @@ function modify(buffer) {
 module.exports = env => {
     return {
         entry: {
-            'serviceWorker': './src/serviceWorker.ts',
+            'service-worker': './src/background/serviceWorker.ts',
             'content-script': './src/content-script/index.ts',
-            'popup': './src/popup.ts',
+            'popup': './src/popup/index.ts',
+            'deck-builder-website-script': './src/website-script/deckBuilder.ts'
         },
         module: {
             rules: [
@@ -32,6 +35,12 @@ module.exports = env => {
                     test: /\.(scss|css)$/,
                     use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
                 },
+            ],
+        },
+        optimization: {
+            minimizer: [
+                new CssMinimizerPlugin(),
+                '...'
             ],
         },
         resolve: {
@@ -62,6 +71,9 @@ module.exports = env => {
                         }
                     }
                 ],
+            }),
+            new webpack.DefinePlugin({
+                __EXTENSION_ID__: JSON.stringify(env.extId)
             }),
         ],
     };

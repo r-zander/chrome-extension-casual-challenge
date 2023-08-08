@@ -1,6 +1,8 @@
 {
   "background": {
-    "scripts": ["serviceWorker.js"]
+    "scripts": [
+      "service-worker.js"
+    ]
   },
   "browser_specific_settings": {
     "gecko": {

@@ -1,0 +1,12 @@
+@import '~normalize.css';
+
+.input-group {
+    display: flex;
+
+    margin: 1rem 0;
+
+    flex-direction: row;
+    gap: 1rem;
+
+    align-items: center;
+}

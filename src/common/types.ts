@@ -57,3 +57,40 @@ export type CardLegality = ('banned' | 'legal' | 'not_legal' | 'restricted' | 'U
 export type CasualCardLegality = (CardLegality | 'extended');
 
 export type ScryfallUUID = string;
+
+export type DeckEntryUUID = string;
+
+export type CardDigest = {
+    id: ScryfallUUID,
+    name: string,
+}
+
+export type BoardEntry = {
+    id: DeckEntryUUID,
+    count: number,
+    card_digest: CardDigest | null,
+}
+
+export type MessageType =
+    DeckLoadedMessageType
+    | DeckEntryMessageType
+    | DeckEntryRemovedMessageType;
+
+export type DeckLoadedMessageType = {
+    event: 'deck.loaded',
+    payload: {
+        entries: { [key: string]: BoardEntry[] }
+    }
+}
+
+export type DeckEntryMessageType = {
+    event: 'card.added' | 'card.updated' | 'card.replaced',
+    payload: BoardEntry
+}
+
+export type DeckEntryRemovedMessageType = {
+    event: 'card.removed',
+    payload: {
+        id: DeckEntryUUID
+    }
+}

@@ -1,0 +1,370 @@
+.sidebar-toolbox.casual-challenge {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #E0DEE3;
+    margin-top: -6px;
+    margin-bottom: 6px;
+}
+
+.casual-challenge > .sidebar-header {
+    margin-top: 0;
+    color: inherit;
+}
+
+.sidebar-prices-price.board-price {
+    > *:first-child {
+        margin-left: 1em;
+        font-size: 13px;
+    }
+
+    > *:last-child {
+        font-size: 12px;
+    }
+}
+
+.deckbuilder-sidebar > .sidebar-toolbox.casual-challenge {
+    border-bottom: none;
+
+    > .sidebar-prices-price > *:first-child {
+        font-size: 12px;
+    }
+
+    > .sidebar-prices-price > *:last-child {
+        font-size: 11.5px;
+    }
+
+    > .sidebar-prices-price.board-price {
+        > *:first-child {
+            margin-left: 1em;
+            font-size: 10.5px;
+        }
+
+        > *:last-child {
+            font-size: 10px;
+        }
+    }
+}
+
+.search-controls-casual-challenge {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -webkit-flex-flow: row nowrap;
+    -ms-flex-flow: row nowrap;
+    flex-flow: row nowrap;
+    -webkit-box-pack: start;
+    -webkit-justify-content: flex-start;
+    -ms-flex-pack: start;
+    justify-content: flex-start;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
+    align-items: center;
+
+    > .casual-challenge-checks-loading {
+        width: 56px;
+
+        &:not(.hidden) + #check {
+            display: none;
+        }
+    }
+}
+
+.casual-challenge > .button-n {
+    margin: 0 !important;
+}
+
+.deck-list-section-title {
+    > .budget-points {
+        float: right;
+    }
+}
+
+.deck-list-entry,
+.deckbuilder-entry {
+    .card-legality {
+        border-top: none;
+        padding: 0;
+        margin-left: 5px;
+
+        > dd {
+            padding: 0 6px;
+            line-height: 20px;
+            height: 20px;
+
+            min-width: 42px;
+            max-width: 42px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+}
+
+.card-legality > dd.extended {
+    background-color: #EFC20E;
+}
+
+.card-legality > dd.future-banned {
+    background-color: #D79167;
+}
+
+.casual-challenge-deck {
+    .deck-list-entry-axial-data {
+        // Reduce price width a bit - in casual prices should be pretty low anyways
+        min-width: 2.75em !important;
+    }
+
+    .deckbuilder-entry-information {
+        // Ensure overlapping elements are readable by re-applying the page background
+        background-color: #F5F6F7;
+    }
+}
+
+/* Imitate Scryfall button */
+.card-legality > dd.loading {
+    border: 1px solid rgba(85, 26, 139, 0.5);
+    background-color: #F9F7F5;
+    color: rgb(85, 26, 139);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.legality-overlay {
+    z-index: 5;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    border: 4px solid;
+    border-radius: 9px;
+}
+
+.legality-overlay.loading {
+    border-color: #551A8B;
+}
+
+.legality-overlay.legal {
+    border-color: #75986E;
+}
+
+.legality-overlay.extended {
+    border-color: #EFC20E;
+}
+
+.legality-overlay.banned {
+    border-color: #CF8184;
+}
+
+.legality-overlay.future-banned {
+    border-color: #D79167;
+}
+
+.legality-overlay.restriced {
+    border-color: #84A7B7;
+}
+
+.legality-overlay.not-legal {
+    border-color: #AEAEAE;
+}
+
+.card-legality-item > dt {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-legality-item > dd.extended {
+    background-color: #EFC20E;
+}
+
+.card-legality-item > dd.future-banned {
+    background-color: #D79167;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding-left: 0.6em;
+}
+
+.card-grid-item-count.card-grid-item-budget-points {
+    top: auto;
+    bottom: 46%;
+
+    min-width: 42px;
+
+    font-weight: lighter;
+    text-transform: lowercase;
+    font-variant: small-caps;
+
+    &.layout-saga {
+        left: 54%;
+        bottom: 18%;
+    }
+
+    &.layout-class {
+        bottom: 18%;
+    }
+}
+
+.not-legal > .card-grid-item-count.card-grid-item-budget-points {
+    display: none;
+}
+
+
+.card-grid-item-count.card-grid-item-legality {
+    left: auto;
+    right: 11%;
+    border-right: 2px solid rgba(0, 0, 0, 0.133);
+
+    min-width: 42px;
+
+    display: none;
+}
+
+.card-grid-item-card:hover > .card-grid-item-legality:not(.hidden),
+.card-grid-item-card:active > .card-grid-item-legality:not(.hidden),
+.card-grid-item-card:focus > .card-grid-item-legality:not(.hidden) {
+    display: flex;
+}
+
+.card-grid-item-legality.loading {
+    background-color: #F9F7F5;
+    border: 2px solid #551A8B;
+    border-right-color: #41146B !important;
+}
+
+.card-grid-item-legality.legal {
+    background-color: #75986E;
+}
+
+.card-grid-item-legality.extended {
+    background-color: #EFC20E;
+}
+
+.card-grid-item-legality.banned {
+    background-color: #CF8184;
+}
+
+.card-grid-item-legality.future-banned {
+    background-color: #D79167;
+}
+
+.card-grid-item-legality.restriced {
+    border-color: #84A7B7;
+}
+
+.card-grid-item-legality.not-legal {
+    background-color: #AEAEAE;
+}
+
+.mode-search-images-overlay {
+    .legality-overlay.loading,
+    .card-grid-item-card > .card-grid-item-legality.loading,
+    .legality-overlay.legal,
+    .card-grid-item-card > .card-grid-item-legality.legal {
+        display: none;
+    }
+
+    .card-grid-item-card.not-legal > .card-grid-item-card-faces,
+    .card-grid-item-card.banned > .card-grid-item-card-faces {
+        opacity: 60%;
+    }
+}
+
+.mode-deck-list {
+    .deckbuilder-sidebar {
+        width: 131px;
+    }
+}
+
+.deckbuilder-sidebar {
+    > ol + .deckbuilder-section-title-bar {
+        margin-top: 16px;
+    }
+}
+
+/**
+ * ==============================================
+ * Dot Flashing by Zongbin
+ * Source: https://codepen.io/nzbin/pen/GGrXbp
+ * ==============================================
+ */
+.dot-flashing {
+    position: relative;
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: #551A8B;
+    color: #551A8B;
+    animation: dotFlashing 1s infinite linear alternate;
+    animation-delay: .5s;
+}
+
+.dot-flashing::before, .dot-flashing::after {
+    content: '';
+    display: inline-block;
+    position: absolute;
+    top: 0;
+}
+
+.dot-flashing::before {
+    left: -8px;
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: #551A8B;
+    color: #551A8B;
+    animation: dotFlashing 1s infinite alternate;
+    animation-delay: 0s;
+}
+
+.dot-flashing::after {
+    left: 8px;
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: #551A8B;
+    color: #551A8B;
+    animation: dotFlashing 1s infinite alternate;
+    animation-delay: 1s;
+}
+
+@keyframes dotFlashing {
+    0% {
+        background-color: #551A8B;
+    }
+    50%,
+    100% {
+        background-color: rgba(85, 26, 139, 0.15);
+    }
+}
+
+/**
+ * ==============================================
+ * End of Dot Flashing
+ * ==============================================
+ */
+
+.message {
+    background-color: #3497BE;
+    border-radius: 3px;
+}
+
+.flash-message {
+    width: 100%;
+    padding: 12px 3%;
+    position: relative;
+    cursor: pointer;
+    -webkit-box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.06);
+    z-index: 1000;
+    margin: 0 0 -1px 0;
+    background-color: #3497BE;
+}
