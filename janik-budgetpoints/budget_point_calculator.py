@@ -1,4 +1,8 @@
 import json
+import requests
+import zipfile
+import io
+
 
 printingsFilePath = '.\\AllPrintings.json'
 pricesFilePath = '.\\AllPrices.json'
@@ -7,8 +11,8 @@ pricesFilePath = '.\\AllPrices.json'
 ignoredPricesFilePath = '.\\IgnoredPrices.json'
 outputPath = '..\\data\\card-prices.json'
 
-earliestDate = 20230501  # inclusive
-latestDate = 20230902  # exclusive
+earliestDate = 20230701  # inclusive
+latestDate = 20231112  # exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
@@ -18,6 +22,23 @@ illegalBorderColors = ['silver', 'gold']
 #		'cheapestPrintAverage': 1.21},
 #	...}
 cardPrices = {}
+
+
+def download(url, fileName):
+	# Step 1: Download the MTGJSON zip file
+	response = requests.get(url)
+
+	# Check if the request was successful
+	if response.status_code == 200:
+		# Step 2: Unpack the downloaded zip file
+		with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+			try:
+				zip_file.extract(fileName)
+				print(f"{fileName} has been successfully unpacked.")
+			except (ValueError, RuntimeError, KeyError) as err:
+				print(f"Error extracting {fileName}.", err)
+	else:
+		print(f"Failed to download {url}. Status code: {response.status_code}\n{response.text}")
 
 
 def getPricesWhithinTimeRange(pricesPerDay):
@@ -188,6 +209,12 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 
 
 print('Untap, Upkeep, Draw!')
+
+print('Downloading AllPrintings.json')
+download('https://mtgjson.com/api/v5/AllPrintings.json.zip', 'AllPrintings.json')
+
+print('Downloading AllPrices.json')
+download('https://mtgjson.com/api/v5/AllPrices.json.zip', 'AllPrices.json')
 
 print('Reading printings')
 with open(printingsFilePath, 'r', encoding='utf-8') as f:
