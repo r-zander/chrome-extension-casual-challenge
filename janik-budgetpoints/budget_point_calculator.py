@@ -4,15 +4,17 @@ import zipfile
 import io
 
 
-printingsFilePath = '.\\AllPrintings.json'
-pricesFilePath = '.\\AllPrices.json'
+printingsFileName = 'AllPrintings.json'
+printingsFilePath = '.\\' + printingsFileName
+pricesFileName = 'AllPrices.json'
+pricesFilePath = '.\\' + pricesFileName
 # Contains a mapping of cardName => [ignoredSets] to basically blacklist certain prices that are just way off.
 # For examples, check the file. For comments on each card+set combination check the commit history
 ignoredPricesFilePath = '.\\IgnoredPrices.json'
 outputPath = '..\\data\\card-prices.json'
 
-earliestDate = 20230701  # inclusive
-latestDate = 20231112  # exclusive
+earliestDate = 20240123  # inclusive
+latestDate = 20240302  # exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
@@ -211,10 +213,10 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 print('Untap, Upkeep, Draw!')
 
 print('Downloading AllPrintings.json')
-download('https://mtgjson.com/api/v5/AllPrintings.json.zip', 'AllPrintings.json')
+download('https://mtgjson.com/api/v5/AllPrintings.json.zip', printingsFileName)
 
 print('Downloading AllPrices.json')
-download('https://mtgjson.com/api/v5/AllPrices.json.zip', 'AllPrices.json')
+download('https://mtgjson.com/api/v5/AllPrices.json.zip', pricesFileName)
 
 print('Reading printings')
 with open(printingsFilePath, 'r', encoding='utf-8') as f:
