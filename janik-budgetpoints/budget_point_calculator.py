@@ -19,9 +19,7 @@ latestDate = 20240302  # exclusive
 illegalBorderColors = ['silver', 'gold']
 
 # cardPrices =
-#	{'Soul Warden': {
-#		'cheapestPerDayAverage': 1.11,
-#		'cheapestPrintAverage': 1.21},
+#	{'Soul Warden': 121},
 #	...}
 cardPrices = {}
 
@@ -129,7 +127,7 @@ def checkForAnomalies(pricesPerPrintings, cardName, uuidAttributes, isDebug=Fals
 		if isDebug: print('For ' + cardName + ' all prices had anomalies.')
 
 
-def calculatePricesForCard(cardName, uuidAttributes, isDebug=False):
+def calculatePricesForCard(cardName, uuidAttributes, mode='CheapestPerDayAverage', isDebug=False):
 	# if isDebug: print('calculatePricesForCard ' + cardName)
 	# if isDebug: print('UUIDs and Attributes: ' + str(uuidAttributes))
 	rawCardPrices = {}
@@ -153,20 +151,25 @@ def calculatePricesForCard(cardName, uuidAttributes, isDebug=False):
 			rawCardPrices[printingPriceUUID + '-foil'] = getPricesWhithinTimeRange(cardmarketRetailPrice['foil'])
 	# if isDebug: print('rawCardPrices:' + str(rawCardPrices))
 	checkForAnomalies(rawCardPrices, cardName, uuidAttributes, isDebug)
-	calculatedAveragePrices['A'] = round(getCheapestPrintAverage(rawCardPrices), 2)
-	calculatedAveragePrices['B'] = round(getCheapestPerDayAverage(rawCardPrices), 2)
-	cardPrices[cardName] = calculatedAveragePrices
-	# if isDebug: print('calculatedAveragePrices: ' + str(calculatedAveragePrices))
+	if mode == 'CheapestPrintAverage':
+		price = getCheapestPrintAverage(rawCardPrices)
+	elif mode == 'CheapestPerDayAverage':
+		price = getCheapestPerDayAverage(rawCardPrices)
+	else:
+		raise ValueError('Unsupported mode ' + mode)
+
+	cardPrices[cardName] = round(price * 100)
+	# if isDebug: print('calculatedAveragePrices: ' + str(cardPrices[cardName]))
 
 
-def getDecklistPrice(decklist, mode='A', isDebug=False):
+def getDecklistPrice(decklist, mode='CheapestPerDayAverage', isDebug=False):
 	totalDeckPrice = 0
 	for cardName in decklist:
 		if cardName not in cardPrices:
-			calculatePricesForCard(cardName, decklist[cardName], isDebug)
+			calculatePricesForCard(cardName, decklist[cardName], mode, isDebug)
 			if len(cardPrices) % 100 == 0:
 				print(str(len(cardPrices)) + ' cards done.')
-		totalDeckPrice += cardPrices[cardName][mode]
+		totalDeckPrice += cardPrices[cardName]
 	print(str(len(cardPrices)) + ' cards done.')
 	return totalDeckPrice
 
@@ -212,11 +215,11 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 
 print('Untap, Upkeep, Draw!')
 
-print('Downloading AllPrintings.json')
-download('https://mtgjson.com/api/v5/AllPrintings.json.zip', printingsFileName)
-
-print('Downloading AllPrices.json')
-download('https://mtgjson.com/api/v5/AllPrices.json.zip', pricesFileName)
+# print('Downloading AllPrintings.json')
+# download('https://mtgjson.com/api/v5/AllPrintings.json.zip', printingsFileName)
+#
+# print('Downloading AllPrices.json')
+# download('https://mtgjson.com/api/v5/AllPrices.json.zip', pricesFileName)
 
 print('Reading printings')
 with open(printingsFilePath, 'r', encoding='utf-8') as f:
@@ -233,7 +236,7 @@ with open(ignoredPricesFilePath, 'r', encoding='utf-8') as f:
 print('Building up Card Dictionary')
 # Add basics as free cards
 basics = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes']
-basicPrices = {'A': 0, 'B': 0}
+basicPrices = 0
 for basic in basics:
 	cardPrices[basic] = basicPrices
 
@@ -252,6 +255,6 @@ getDecklistPrice(allCards) # , 'A', True)
 
 print('Writing card-prices.json')
 with open(outputPath, 'w', encoding='utf-8') as f:
-	f.write(json.dumps(cardPrices))
+	f.write(json.dumps(cardPrices, indent='\t', separators=(',', ':'), sort_keys=True))
 
 print('All done. Ending now.')

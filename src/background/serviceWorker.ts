@@ -17,8 +17,7 @@ import {deckBuilder} from "./deckBuilder";
 
 const bans = loadBans(RawBans);
 const extendedBans = loadBans(RawExtendedBans);
-const loadedPriceIndex = 'B';
-const budgetPoints: Map<string, number> = loadBudgetPoints(CardPrices, loadedPriceIndex);
+const budgetPoints: Map<string, number> = loadBudgetPoints(CardPrices);
 
 console.info('Scryfall - Casual Challenge Checker: Service Worker running!');
 
@@ -152,10 +151,10 @@ function addCardToMap<T>(map: Map<string, T>, cardName: string, value: T) {
     map.set(partialName, value);
 }
 
-function loadBudgetPoints(input: Record<string, Record<string, number>>, priceIndex: string): Map<string, number> {
+function loadBudgetPoints(input: Record<string, number>): Map<string, number> {
     const result = new Map<string, number>();
-    for (const [cardName, prices] of Object.entries(input)) {
-        addCardToMap(result, cardName, Math.round(prices[priceIndex] * 100));
+    for (const [cardName, budgetPoints] of Object.entries(input)) {
+        addCardToMap(result, cardName, budgetPoints);
     }
 
     return result;
