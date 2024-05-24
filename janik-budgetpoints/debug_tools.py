@@ -14,4 +14,4 @@ for cardName, values in data.items():
     # print(cardName + '\t' + locale.format_string('%.2f', values['A']) + '\t' + locale.format_string('%.2f', values['B']))
     if cardName.startswith('+'):
         cardName = "'" + cardName
-    print(cardName + '\t' + locale.format_string('%d', values['B'] * 100))
+    print(cardName + '\t' + locale.format_string('%d', values))

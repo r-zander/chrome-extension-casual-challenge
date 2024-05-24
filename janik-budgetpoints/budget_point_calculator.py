@@ -13,8 +13,8 @@ pricesFilePath = '.\\' + pricesFileName
 ignoredPricesFilePath = '.\\IgnoredPrices.json'
 outputPath = '..\\data\\card-prices.json'
 
-earliestDate = 20240123  # inclusive
-latestDate = 20240302  # exclusive
+earliestDate = 20240309  # inclusive
+latestDate = 20240523  # exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
@@ -215,11 +215,11 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 
 print('Untap, Upkeep, Draw!')
 
-# print('Downloading AllPrintings.json')
-# download('https://mtgjson.com/api/v5/AllPrintings.json.zip', printingsFileName)
-#
-# print('Downloading AllPrices.json')
-# download('https://mtgjson.com/api/v5/AllPrices.json.zip', pricesFileName)
+print('Downloading AllPrintings.json')
+download('https://mtgjson.com/api/v5/AllPrintings.json.zip', printingsFileName)
+
+print('Downloading AllPrices.json')
+download('https://mtgjson.com/api/v5/AllPrices.json.zip', pricesFileName)
 
 print('Reading printings')
 with open(printingsFilePath, 'r', encoding='utf-8') as f:
