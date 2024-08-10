@@ -3,7 +3,6 @@ import requests
 import zipfile
 import io
 
-
 printingsFileName = 'AllPrintings.json'
 printingsFilePath = '.\\' + printingsFileName
 pricesFileName = 'AllPrices.json'
@@ -13,8 +12,8 @@ pricesFilePath = '.\\' + pricesFileName
 ignoredPricesFilePath = '.\\IgnoredPrices.json'
 outputPath = '..\\data\\card-prices.json'
 
-earliestDate = 20240309  # inclusive
-latestDate = 20240523  # exclusive
+earliestDate = 20240601  # inclusive
+latestDate = 20240810  # exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
@@ -159,7 +158,9 @@ def calculatePricesForCard(cardName, uuidAttributes, mode='CheapestPerDayAverage
 		raise ValueError('Unsupported mode ' + mode)
 
 	cardPrices[cardName] = round(price * 100)
-	# if isDebug: print('calculatedAveragePrices: ' + str(cardPrices[cardName]))
+
+
+# if isDebug: print('calculatedAveragePrices: ' + str(cardPrices[cardName]))
 
 
 def getDecklistPrice(decklist, mode='CheapestPerDayAverage', isDebug=False):
@@ -167,10 +168,10 @@ def getDecklistPrice(decklist, mode='CheapestPerDayAverage', isDebug=False):
 	for cardName in decklist:
 		if cardName not in cardPrices:
 			calculatePricesForCard(cardName, decklist[cardName], mode, isDebug)
-			if len(cardPrices) % 100 == 0:
-				print(str(len(cardPrices)) + ' cards done.')
+			if len(cardPrices) % 500 == 0:
+				print(f'{len(cardPrices):05d} cards done.')
 		totalDeckPrice += cardPrices[cardName]
-	print(str(len(cardPrices)) + ' cards done.')
+	print(f'{len(cardPrices):05d} cards done.')
 	return totalDeckPrice
 
 
@@ -213,27 +214,37 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 	return allCardVersion
 
 
-print('Untap, Upkeep, Draw!')
+totalSteps = 9
+step = 0
+digits = len(str(totalSteps))
+print(f'{step:0{digits}d} / {totalSteps:d} | Untap, Upkeep, Draw!')
+step += 1
 
-print('Downloading AllPrintings.json')
+print(f'{step:0{digits}d} / {totalSteps:d} | Downloading AllPrintings.json')
+step += 1
 download('https://mtgjson.com/api/v5/AllPrintings.json.zip', printingsFileName)
 
-print('Downloading AllPrices.json')
+print(f'{step:0{digits}d} / {totalSteps:d} | Downloading AllPrices.json')
+step += 1
 download('https://mtgjson.com/api/v5/AllPrices.json.zip', pricesFileName)
 
-print('Reading printings')
+print(f'{step:0{digits}d} / {totalSteps:d} | Reading printings')
+step += 1
 with open(printingsFilePath, 'r', encoding='utf-8') as f:
 	rawPrintings = json.load(f)['data']
 
-print('Reading Prices')
+print(f'{step:0{digits}d} / {totalSteps:d} | Reading Prices')
+step += 1
 with open(pricesFilePath, 'r', encoding='utf-8') as f:
 	rawPrices = json.load(f)['data']
 
-print('Reading Ignore list')
+print(f'{step:0{digits}d} / {totalSteps:d} | Reading Ignore list')
+step += 1
 with open(ignoredPricesFilePath, 'r', encoding='utf-8') as f:
 	rawIgnores = json.load(f)
 
-print('Building up Card Dictionary')
+print(f'{step:0{digits}d} / {totalSteps:d} | Building up Card Dictionary')
+step += 1
 # Add basics as free cards
 basics = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes']
 basicPrices = 0
@@ -250,11 +261,13 @@ print('Done building Card Dictionary: ' + str(len(allCards)))
 # }
 # getDecklistPrice(allCards, 'A', True)
 
-print('Calculating budget points')
-getDecklistPrice(allCards) # , 'A', True)
+print(f'{step:0{digits}d} / {totalSteps:d} | Calculating budget points - that\'s the big step!')
+step += 1
+getDecklistPrice(allCards)  # , 'A', True)
 
-print('Writing card-prices.json')
+print(f'{step:0{digits}d} / {totalSteps:d} | Writing card-prices.json')
+step += 1
 with open(outputPath, 'w', encoding='utf-8') as f:
-	f.write(json.dumps(cardPrices, indent='\t', separators=(',', ':'), sort_keys=True))
+	f.write(json.dumps(cardPrices, indent='', separators=(',', ':'), sort_keys=True))
 
-print('All done. Ending now.')
+print(f'{step:0{digits}d} / {totalSteps:d} | All done. Ending now.')

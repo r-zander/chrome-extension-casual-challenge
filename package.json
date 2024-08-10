@@ -1,6 +1,6 @@
 {
   "name": "scryfall-casual-challenge-checker",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "Checks deck lists on scryfall.com if they are legal for the 'Casual Challenge', a custom Magic the Gathering format created by XieLong and Janosch.exe.",
   "scripts": {
     "start": "webpack --watch --config webpack.dev.js --env manifest=./src/manifest-chrome.json extId=iflbbacoehadmpmngkkmfmlanadjihjm browser=CHROME",
