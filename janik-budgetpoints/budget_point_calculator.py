@@ -18,10 +18,10 @@ latestDate = 20240810  # exclusive
 illegalBorderColors = ['silver', 'gold']
 
 # cardPrices =
-#	{'Soul Warden': 121},
-#	...}
+# 	{'Soul Warden': {'EUR': 121, 'USD': 147},
+# 	...}
 cardPrices = {}
-
+avgExchangeRate = 0
 
 def download(url, fileName):
 	# Step 1: Download the MTGJSON zip file
@@ -126,10 +126,38 @@ def checkForAnomalies(pricesPerPrintings, cardName, uuidAttributes, isDebug=Fals
 		if isDebug: print('For ' + cardName + ' all prices had anomalies.')
 
 
+def tryFindingRawPricesForCard(rawCardEurPrices, paperPrice, marketIdentifier, attributes, printingPriceUUID):
+	if marketIdentifier not in paperPrice:
+		return
+
+	marketPrice = paperPrice[marketIdentifier]
+	if 'retail' not in marketPrice:
+		return
+
+	marketRetailPrice = marketPrice['retail']
+	if attributes['hasNonFoil'] == True and 'normal' in marketRetailPrice:
+		rawCardEurPrices[printingPriceUUID] = getPricesWhithinTimeRange(marketRetailPrice['normal'])
+	if attributes['hasFoil'] == True and 'foil' in marketRetailPrice:
+		rawCardEurPrices[printingPriceUUID + '-foil'] = getPricesWhithinTimeRange(marketRetailPrice['foil'])
+
+
+def finalizeCardPrice(cardName, isDebug, mode, rawCardEurPrices, uuidAttributes):
+	# if isDebug: print('rawCardEurPrices:' + str(rawCardEurPrices))
+	checkForAnomalies(rawCardEurPrices, cardName, uuidAttributes, isDebug)
+	if mode == 'CheapestPrintAverage':
+		price = getCheapestPrintAverage(rawCardEurPrices)
+	elif mode == 'CheapestPerDayAverage':
+		price = getCheapestPerDayAverage(rawCardEurPrices)
+	else:
+		raise ValueError('Unsupported mode ' + mode)
+	return price
+
+
 def calculatePricesForCard(cardName, uuidAttributes, mode='CheapestPerDayAverage', isDebug=False):
 	# if isDebug: print('calculatePricesForCard ' + cardName)
 	# if isDebug: print('UUIDs and Attributes: ' + str(uuidAttributes))
-	rawCardPrices = {}
+	rawCardEurPrices = {}
+	rawCardUsdPrices = {}
 	calculatedAveragePrices = {}
 	for printingPriceUUID, attributes in uuidAttributes.items():
 		if printingPriceUUID not in rawPrices:
@@ -137,48 +165,47 @@ def calculatePricesForCard(cardName, uuidAttributes, mode='CheapestPerDayAverage
 		priceEntry = rawPrices[printingPriceUUID]
 		if 'paper' not in priceEntry:
 			continue
-		paperPrice = priceEntry['paper']
-		if 'cardmarket' not in paperPrice:
-			continue
-		cardmarketPrice = paperPrice['cardmarket']
-		if 'retail' not in cardmarketPrice:
-			continue
-		cardmarketRetailPrice = cardmarketPrice['retail']
-		if attributes['hasNonFoil'] == True and 'normal' in cardmarketRetailPrice:
-			rawCardPrices[printingPriceUUID] = getPricesWhithinTimeRange(cardmarketRetailPrice['normal'])
-		if attributes['hasFoil'] == True and 'foil' in cardmarketRetailPrice:
-			rawCardPrices[printingPriceUUID + '-foil'] = getPricesWhithinTimeRange(cardmarketRetailPrice['foil'])
-	# if isDebug: print('rawCardPrices:' + str(rawCardPrices))
-	checkForAnomalies(rawCardPrices, cardName, uuidAttributes, isDebug)
-	if mode == 'CheapestPrintAverage':
-		price = getCheapestPrintAverage(rawCardPrices)
-	elif mode == 'CheapestPerDayAverage':
-		price = getCheapestPerDayAverage(rawCardPrices)
-	else:
-		raise ValueError('Unsupported mode ' + mode)
+		tryFindingRawPricesForCard(rawCardEurPrices, priceEntry['paper'], 'cardmarket', attributes, printingPriceUUID)
+		tryFindingRawPricesForCard(rawCardUsdPrices, priceEntry['paper'], 'tcgplayer', attributes, printingPriceUUID)
 
-	cardPrices[cardName] = round(price * 100)
+	eurPrice = finalizeCardPrice(cardName, isDebug, mode, rawCardEurPrices, uuidAttributes)
+	usdPrice = finalizeCardPrice(cardName, isDebug, mode, rawCardUsdPrices, uuidAttributes)
+
+	cardPrices[cardName] = {
+		'EUR': round(eurPrice * 100),
+		'USD': round(usdPrice * 100),
+		'exR': usdPrice / eurPrice if eurPrice > 0 else None
+	}
 
 
 # if isDebug: print('calculatedAveragePrices: ' + str(cardPrices[cardName]))
 
 
 def getDecklistPrice(decklist, mode='CheapestPerDayAverage', isDebug=False):
+	global avgExchangeRate
+
 	totalDeckPrice = 0
+	totalExchangeRate = 0
+	exchangeRateCount = 0
 	for cardName in decklist:
 		if cardName not in cardPrices:
 			calculatePricesForCard(cardName, decklist[cardName], mode, isDebug)
 			if len(cardPrices) % 500 == 0:
 				print(f'{len(cardPrices):05d} cards done.')
-		totalDeckPrice += cardPrices[cardName]
+			if cardPrices[cardName]['exR'] is not None:
+				totalExchangeRate += cardPrices[cardName]['exR']
+				exchangeRateCount += 1
+		totalDeckPrice += cardPrices[cardName]['EUR']
+
+	avgExchangeRate = totalExchangeRate / exchangeRateCount
 	print(f'{len(cardPrices):05d} cards done.')
 	return totalDeckPrice
 
 
 # FetchAllPrintings that should be considered for price evaluation
 # {
-#	"Soul Warden": [UUID1, UUID2, ...],
-#	..
+# 	"Soul Warden": [UUID1, UUID2, ...],
+# 	..
 # }
 def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 	allCardVersion = {}
@@ -212,6 +239,22 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 	# if (len(allCardVersion) >= 5000):
 	# 	break
 	return allCardVersion
+
+
+def calculateMissingPrices(isDebug=False):
+	fixedCards = []
+	for cardName, priceDef in cardPrices.items():
+		if priceDef['EUR'] > 0:
+			continue
+
+		if priceDef['USD'] == 0:
+			continue
+
+		priceDef['EUR'] = round(priceDef['USD'] / avgExchangeRate)
+		fixedCards.append(cardName)
+
+	print('Fixed ' + str(len(fixedCards)) + ' card prices.')
+	if isDebug: print(fixedCards)
 
 
 totalSteps = 9
@@ -249,7 +292,10 @@ step += 1
 basics = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes']
 basicPrices = 0
 for basic in basics:
-	cardPrices[basic] = basicPrices
+	cardPrices[basic] = {
+		'EUR': basicPrices,
+		'USD': basicPrices,
+	}
 
 # Create a "decklist" with every card in existance
 allCards = getAllCardVersions()
@@ -264,10 +310,19 @@ print('Done building Card Dictionary: ' + str(len(allCards)))
 print(f'{step:0{digits}d} / {totalSteps:d} | Calculating budget points - that\'s the big step!')
 step += 1
 getDecklistPrice(allCards)  # , 'A', True)
+print('Average Exchange Rate is: ' + str(avgExchangeRate))
+# To be defensive, the avgExchangeRate is reduced
+avgExchangeRate = (1 + avgExchangeRate) / 2
+print('Adjusted average Exchange Rate is: ' + str(avgExchangeRate))
+
+print(f'{step:0{digits}d} / {totalSteps:d} | Use exchange rate to fix missing budget points')
+step += 1
+calculateMissingPrices()
 
 print(f'{step:0{digits}d} / {totalSteps:d} | Writing card-prices.json')
 step += 1
+cardBudgetPoints = {key: value["EUR"] for key, value in cardPrices.items()}
 with open(outputPath, 'w', encoding='utf-8') as f:
-	f.write(json.dumps(cardPrices, indent='', separators=(',', ':'), sort_keys=True))
+	f.write(json.dumps(cardBudgetPoints, indent='', separators=(',', ':'), sort_keys=True))
 
 print(f'{step:0{digits}d} / {totalSteps:d} | All done. Ending now.')
