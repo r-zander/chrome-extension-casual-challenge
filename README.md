@@ -21,7 +21,7 @@ Checks cards and lists on scryfall.com if they are legal for the 'Casual Challen
 
 ### Build Chrome Extension
 
-* `npm install`
+* First time: `npm install`
 * `npm run build-chrome`
 * `upload[-environment].bat`
 * Visit https://chrome.google.com/webstore/devconsole/96b3f2ff-adde-4b86-a5ca-dd664792f43f/cbdgdonajjfilioojjocdijiadbijpfg/edit
@@ -30,7 +30,7 @@ Checks cards and lists on scryfall.com if they are legal for the 'Casual Challen
 
 ### Build Firefox Add-On
 
-* `npm install`
+* First time: `npm install`
 * `npm run build-and-package-firefox`
 * --> `dist/firefox` contains a zip file ready to be uploaded to addons.mozilla.org
 * Visit https://addons.mozilla.org/en-US/developers/addon/scryfall-casual-challenge/versions/submit/
