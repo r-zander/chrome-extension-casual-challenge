@@ -21,7 +21,7 @@ export function formatBudgetPoints(budgetPoints: number) {
     let numberPos = str.length;
     for (let i = 0; i < str.length; i++) {
         if (numberPos !== str.length && numberPos % 2 === 0) {
-            result += '&hairsp;&hairsp;';
+            result += '&thinsp;';
         }
 
         result += str.charAt(i);

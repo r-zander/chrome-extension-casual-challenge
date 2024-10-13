@@ -1,6 +1,6 @@
 import {CheckMode, MetaBar} from "./metaBar";
 import {StorageKeys, syncStorage} from "../../common/storage";
-import {FullCard} from "../../common/cardRepresentations";
+import {FullCard, StatisticsCard} from '../../common/cardRepresentations';
 import {CardLoader} from "../cardLoader";
 import {isBasicLand} from "../../common/casualChallengeLogic";
 
@@ -15,7 +15,7 @@ export function removeGlobalClass(cssClass: string) {
 /**
  * Only looks at Casual Challenge relevant formats.
  */
-function isBannedInAnyFormat(card: FullCard) {
+export function isBannedInAnyFormat(card: StatisticsCard) {
     const legalities = card.legalities;
     return legalities.standard === 'banned' ||
         legalities.pioneer === 'banned' ||

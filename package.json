@@ -1,14 +1,17 @@
 {
   "name": "scryfall-casual-challenge-checker",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "Checks deck lists on scryfall.com if they are legal for the 'Casual Challenge', a custom Magic the Gathering format created by XieLong and Janosch.exe.",
   "scripts": {
-    "start": "webpack --watch --config webpack.dev.js --env manifest=./src/manifest-chrome.json extId=iflbbacoehadmpmngkkmfmlanadjihjm browser=CHROME",
+    "start-chrome": "webpack --watch --config webpack.dev.js --env manifest=./src/manifest-chrome.json extId=iflbbacoehadmpmngkkmfmlanadjihjm browser=CHROME",
+    "start-firefox": "webpack --watch --config webpack.dev.js --env manifest=./src/manifest-firefox.json extId=addon@casual-challenge.org browser=FIREFOX",
+
     "build-chrome": "webpack --config webpack.prod.js --env manifest=./src/manifest-chrome.json extId=cbdgdonajjfilioojjocdijiadbijpfg browser=CHROME",
+    "build-and-package-firefox": "npm run build-firefox && npm run package-firefox && npm run src-zip",
+
     "build-firefox": "webpack --config webpack.prod.js --env manifest=./src/manifest-firefox.json extId=addon@casual-challenge.org browser=FIREFOX",
     "package-firefox": "web-ext build --source-dir=dist --artifacts-dir=dist/firefox",
-    "build-and-package-firefox": "npm run build-firefox && npm run package-firefox && npm run src-zip",
-    "start-firefox": "webpack --watch --config webpack.dev.js --env manifest=./src/manifest-firefox.json extId=addon@casual-challenge.org browser=FIREFOX",
+
     "lint": "eslint --ext .ts,.js --max-warnings=0 .",
     "prettier": "prettier --write",
     "src-zip": "bestzip chrome-extension-casual-challenge.zip data src static .eslintignore .eslintrc .prettierignore .prettierrc babel.config.json package.json package-lock.json README.md tsconfig.json webpack.common.js webpack.dev.js webpack.prod.js"

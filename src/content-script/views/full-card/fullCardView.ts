@@ -232,7 +232,10 @@ function formatsToString(formats: Map<keyof typeof Format, number>): string {
 function appendLegalityElement(cardProfileElement: HTMLElement, cssClass: string, text: string, explanation: string): void {
     const template = document.createElement('template');
     template.innerHTML =
-        `<div class="card-legality-item">
+        `<div class="card-legality-item casual-challenge"
+              title="${text} in Casual Challenge
+
+${explanation}">
             <dt title="Casual Challenge">Casual Challenge</dt>
             <dd title="${explanation}" class="${cssClass}">${text}</dd>
          </div>`
@@ -246,4 +249,12 @@ function appendLegalityElement(cardProfileElement: HTMLElement, cssClass: string
         newRow.content.firstElementChild.append(template.content);
         cardLegalityRow.after(newRow.content);
     }
+
+    cardProfileElement
+        .querySelectorAll('.card-legality-item.casual-challenge')
+        .forEach((titledElement) => {
+            titledElement.addEventListener('click', (event) => {
+                (event.currentTarget as HTMLElement).classList.toggle('clicked');
+            });
+        });
 }

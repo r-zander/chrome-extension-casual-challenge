@@ -10,7 +10,8 @@
     color: inherit;
 }
 
-.sidebar-prices-price.board-price {
+.sidebar-prices-price.board-price,
+.sidebar-prices-price.detail-legality {
     > *:first-child {
         margin-left: 1em;
         font-size: 13px;
@@ -18,6 +19,11 @@
 
     > *:last-child {
         font-size: 12px;
+    }
+
+    > .sidebar-prices-wildcards {
+        scale: (12 / 13);
+        transform-origin: right center;
     }
 }
 
@@ -32,7 +38,8 @@
         font-size: 11.5px;
     }
 
-    > .sidebar-prices-price.board-price {
+    > .sidebar-prices-price.board-price,
+    > .sidebar-prices-price.detail-legality {
         > *:first-child {
             margin-left: 1em;
             font-size: 10.5px;
@@ -41,6 +48,20 @@
         > *:last-child {
             font-size: 10px;
         }
+
+        > .sidebar-prices-wildcards > .currency-wildcard {
+            scale: (10 / 10.5);
+        }
+    }
+}
+
+.currency-wildcard {
+    &.legal {
+        background-color: #75986E;
+    }
+
+    &.not-legal {
+        background-color: rgba(167, 31, 42, 0.58);
     }
 }
 
@@ -90,7 +111,7 @@
         margin-left: 5px;
 
         > dd {
-            padding: 0 6px;
+            padding: 0 6px !important; /* Why ever, but scryfall also enforces this padding with !important in Firefox */
             line-height: 20px;
             height: 20px;
 
@@ -103,12 +124,83 @@
     }
 }
 
-.card-legality > dd.extended {
-    background-color: #EFC20E;
+.card-legality,
+.card-legality-item {
+    &[title] {
+        cursor: help;
+
+        position: relative;
+
+        &::after {
+            content: attr(title);
+            display: none;
+
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            margin-bottom: 8px;
+
+            z-index: 1;
+
+            width: 16em;
+            padding: 4px 4px 3px;
+            border-radius: 2px;
+
+            background-color: rgba(0, 0, 0, 0.75);
+            color: white;
+
+            font-size: 12px;
+            text-transform: none;
+            text-align: left;
+            white-space: pre-line;
+        }
+    }
+
+    &.clicked {
+        &::after {
+            display: block;
+        }
+    }
+
+    > dd {
+        &.extended {
+            background-color: #EFC20E;
+        }
+
+        &.future-banned {
+            background-color: #D79167;
+        }
+
+        /* Imitate Scryfall button */
+        &.loading {
+            border: 1px solid rgba(85, 26, 139, 0.5);
+            background-color: #F9F7F5;
+            color: rgb(85, 26, 139);
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    }
 }
 
-.card-legality > dd.future-banned {
-    background-color: #D79167;
+
+.card-legality-item {
+    > dt {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    > dd {
+        &.future-banned {
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            padding-left: 0.6em;
+        }
+    }
 }
 
 .casual-challenge-deck {
@@ -121,17 +213,6 @@
         // Ensure overlapping elements are readable by re-applying the page background
         background-color: #F5F6F7;
     }
-}
-
-/* Imitate Scryfall button */
-.card-legality > dd.loading {
-    border: 1px solid rgba(85, 26, 139, 0.5);
-    background-color: #F9F7F5;
-    color: rgb(85, 26, 139);
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 .legality-overlay {
@@ -173,24 +254,6 @@
 
 .legality-overlay.not-legal {
     border-color: #AEAEAE;
-}
-
-.card-legality-item > dt {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.card-legality-item > dd.extended {
-    background-color: #EFC20E;
-}
-
-.card-legality-item > dd.future-banned {
-    background-color: #D79167;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    padding-left: 0.6em;
 }
 
 .card-grid-item-count.card-grid-item-budget-points {
@@ -308,7 +371,7 @@
 }
 
 .dot-flashing::before, .dot-flashing::after {
-    content: '';
+    content: "";
     display: inline-block;
     position: absolute;
     top: 0;

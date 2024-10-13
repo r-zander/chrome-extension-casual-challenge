@@ -114,6 +114,7 @@ export interface StatisticsCard {
     readonly name: string,
     readonly budgetPoints: number;
     readonly banStatus: string;
+    readonly legalities: PaperLegalities;
 }
 
 export class FullCard extends CachedScryfallCard implements StatisticsCard {

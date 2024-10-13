@@ -67,7 +67,7 @@ export abstract class AbstractDeckView<TMetaBar extends StatisticsAwareMetaBar> 
         if (deckElement !== null) {
             deckElement.classList.add('casual-challenge-deck');
         }
-        this.deckStatistics = new DeckStatistics();
+        this.deckStatistics = new DeckStatistics(this.displayExtended);
     }
 
     protected onDisableChecks() {

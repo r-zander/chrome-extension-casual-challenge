@@ -16,12 +16,30 @@ Checks cards and lists on scryfall.com if they are legal for the 'Casual Challen
 ### Used development stack
 
 * Windows 10 (22H2)
-* Node.js v18.15.0
+* Node.js v18.15.0 (strongly recommended to use NVM)
 * npm 9.6.4
+
+Other versions might or might not work - in theory there is nothing hard-bound to these versions in the project, but experience has shown that npm projects are not too happy about different environments.
+
+### First start
+
+- Run `npm install`
+
+### Test Extension in Chrome
+
+* Run `npm run start-chrome`
+* https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked
+  * Need to load the extension from `\chrome-extension-casual-challenge\dist`
+
+### Test Extension in Firefox
+
+* First time, run `npm install --global web-ext`
+* In `chrome-extension-casual-challenge\dist` run `web-ext run`
+
+## Releasing
 
 ### Build Chrome Extension
 
-* First time: `npm install`
 * `npm run build-chrome`
 * `upload[-environment].bat`
 * Visit https://chrome.google.com/webstore/devconsole/96b3f2ff-adde-4b86-a5ca-dd664792f43f/cbdgdonajjfilioojjocdijiadbijpfg/edit
@@ -30,13 +48,11 @@ Checks cards and lists on scryfall.com if they are legal for the 'Casual Challen
 
 ### Build Firefox Add-On
 
-* First time: `npm install`
 * `npm run build-and-package-firefox`
 * --> `dist/firefox` contains a zip file ready to be uploaded to addons.mozilla.org
 * Visit https://addons.mozilla.org/en-US/developers/addon/scryfall-casual-challenge/versions/submit/
 * Upload the zip file
-* Firefox wants to have the source files
-  * ![img.png](readme-firefox-source-zip.png)
+* Firefox wants to have the source files --> upload `\chrome-extension-casual-challenge\chrome-extension-casual-challenge.zip`
 * Once the review was successful, the developer account will receive a notification via email
 
 ## Credits

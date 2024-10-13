@@ -1,13 +1,19 @@
 import {formatBudgetPoints, formatBudgetPointsShare} from "../../../common/formatting";
 import {MAX_BUDGET_POINTS} from "../../../common/casualChallengeLogic";
-import {DeckStatistics} from "./deckStatistics";
+import {DeckStatistics, LegalityDetail, LegalityDetailStrings} from './deckStatistics';
 import {MetaBar} from "../metaBar";
 
 const sidebarClasses = {
-    PRICE: 'sidebar-prices-price',
+    LEGALITY: 'sidebar-prices-price', // provided by Scryfall itself - used to keep layout
+    OVERALL_LEGALITY: 'overall-legality',
+    LEGALITY_STATUS: 'legality-status',
+    DETAIL_LEGALITY: 'detail-legality',
+
+    PRICE: 'sidebar-prices-price', // provided by Scryfall itself - used to keep layout
     TOTAL_PRICE: 'total-price',
     BUDGET_POINT_SUM: 'budget-point-sum',
     BUDGET_POINT_SHARE: 'budget-point-share',
+
     BOARD_NAME: 'board-name',
     BOARD_PRICE: 'board-price',
 }
@@ -28,7 +34,35 @@ export const statisticHtml = `
     <span class="currency-usd">% of ${maxBP}</span>
     <span class="currency-usd ${sidebarClasses.BUDGET_POINT_SHARE}"></span>
 </span>
+
+<span class="${sidebarClasses.LEGALITY} ${sidebarClasses.OVERALL_LEGALITY} hidden">
+    <span class="">Is the deck legal?</span>
+    <span class="${sidebarClasses.LEGALITY_STATUS} sidebar-prices-wildcards"></span>
+</span>
+<span class="${sidebarClasses.LEGALITY} ${sidebarClasses.DETAIL_LEGALITY} hidden"
+      data-legality-detail="${LegalityDetail.MainboardSize}">
+    <span class="">&geq;&thinsp;60 cards mainboard</span>
+    <span class="${sidebarClasses.LEGALITY_STATUS} sidebar-prices-wildcards"></span>
+</span>
+<span class="${sidebarClasses.LEGALITY} ${sidebarClasses.DETAIL_LEGALITY} hidden"
+      data-legality-detail="${LegalityDetail.SideboardSize}">
+    <span class="">&leq;&thinsp;15 cards sideboard</span>
+    <span class="${sidebarClasses.LEGALITY_STATUS} sidebar-prices-wildcards"></span>
+</span>
+<span class="${sidebarClasses.LEGALITY} ${sidebarClasses.DETAIL_LEGALITY} hidden"
+      data-legality-detail="${LegalityDetail.BudgetPoints}">
+    <span class="">&leq;&thinsp;${maxBP} budget points</span>
+    <span class="${sidebarClasses.LEGALITY_STATUS} sidebar-prices-wildcards"></span>
+</span>
+<span class="${sidebarClasses.LEGALITY} ${sidebarClasses.DETAIL_LEGALITY} hidden"
+      data-legality-detail="${LegalityDetail.CardLegality}">
+    <span class="">Only legal cards included</span>
+    <span class="${sidebarClasses.LEGALITY_STATUS} sidebar-prices-wildcards"></span>
+</span>
 `
+
+const legalBadgeHtml = `<span class="currency-wildcard legal">Yes</span>`
+const notLegalBadgeHtml = `<span class="currency-wildcard not-legal">No</span>`
 
 export abstract class StatisticsAwareMetaBar implements MetaBar {
     private readonly renderBoardEntries: boolean;
@@ -48,6 +82,20 @@ export abstract class StatisticsAwareMetaBar implements MetaBar {
     abstract displayDisabled(): void;
 
     public renderDeckStatistics(deckStatistics: DeckStatistics): void {
+        const overallLegalityElement = document.querySelector(`.${sidebarClasses.LEGALITY}.${sidebarClasses.OVERALL_LEGALITY}`);
+        const overallLegalityStatusElement = overallLegalityElement.querySelector(`.${sidebarClasses.LEGALITY_STATUS}`);
+        overallLegalityStatusElement.innerHTML = deckStatistics.isOverallLegal ? legalBadgeHtml : notLegalBadgeHtml;
+        overallLegalityElement.classList.remove('hidden');
+
+        for (const legalityDetailString in LegalityDetail) {
+            const legalityDetail = LegalityDetail[legalityDetailString as LegalityDetailStrings];
+
+            const legalityElement = document.querySelector(`.${sidebarClasses.LEGALITY}.${sidebarClasses.DETAIL_LEGALITY}[data-legality-detail="${legalityDetail}"]`);
+            const legalityStatusElement = legalityElement.querySelector(`.${sidebarClasses.LEGALITY_STATUS}`);
+            legalityStatusElement.innerHTML = deckStatistics.legalityDetails[legalityDetail] ? legalBadgeHtml : notLegalBadgeHtml;
+            legalityElement.classList.remove('hidden');
+        }
+
         const totalPriceElement = document.querySelector(`.${sidebarClasses.PRICE}.${sidebarClasses.TOTAL_PRICE}`);
         const budgetPointSumElement = totalPriceElement.querySelector(`.${sidebarClasses.BUDGET_POINT_SUM}`);
         budgetPointSumElement.innerHTML = formatBudgetPoints(deckStatistics.budgetPoints);
