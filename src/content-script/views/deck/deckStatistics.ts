@@ -1,4 +1,15 @@
-import {StatisticsCard} from "../../../common/cardRepresentations";
+import {PaperLegalities, StatisticsCard} from '../../../common/cardRepresentations';
+import {isBasicLand, MAX_BUDGET_POINTS} from '../../../common/casualChallengeLogic';
+import {isBannedInAnyFormat} from '../enhancedView';
+
+export enum LegalityDetail {
+    MainboardSize = 'MAINBOARD_SIZE',
+    SideboardSize = 'SIDEBOARD_SIZE',
+    BudgetPoints = 'BUDGET_POINTS',
+    CardLegality = 'CARD_LEGALITY',
+}
+
+export type LegalityDetailStrings = keyof typeof LegalityDetail;
 
 export class DeckStatistics {
     private readonly _displayExtended: boolean;
@@ -160,10 +171,10 @@ class SectionStatistics {
 
     get areAllCardsLegal(): boolean {
         return Object.values(this._entries)
-            .every(value => value.banStatus === 'legal');
+            .every(value => value.banStatus === 'legal' || value.banStatus === 'extended');
     }
 
-    get banStatus(): "banned" | "extended" | null {
+    get banStatus(): 'banned' | 'extended' | null {
         return this._banStatus;
     }
 

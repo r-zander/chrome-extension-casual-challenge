@@ -22,7 +22,7 @@
     }
 
     > .sidebar-prices-wildcards {
-        scale: (12 / 13);
+        scale: calc(12 / 13);
         transform-origin: right center;
     }
 }
@@ -50,7 +50,7 @@
         }
 
         > .sidebar-prices-wildcards > .currency-wildcard {
-            scale: (10 / 10.5);
+            scale: calc(10 / 10.5);
         }
     }
 }
@@ -62,6 +62,10 @@
 
     &.not-legal {
         background-color: rgba(167, 31, 42, 0.58);
+    }
+
+    &.extended {
+        background-color: #EFC20E;
     }
 }
 

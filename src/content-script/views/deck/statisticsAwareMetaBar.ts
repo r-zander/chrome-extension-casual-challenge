@@ -1,7 +1,7 @@
-import {formatBudgetPoints, formatBudgetPointsShare} from "../../../common/formatting";
-import {MAX_BUDGET_POINTS} from "../../../common/casualChallengeLogic";
+import {formatBudgetPoints, formatBudgetPointsShare} from '../../../common/formatting';
+import {MAX_BUDGET_POINTS} from '../../../common/casualChallengeLogic';
 import {DeckStatistics, LegalityDetail, LegalityDetailStrings} from './deckStatistics';
-import {MetaBar} from "../metaBar";
+import {MetaBar} from '../metaBar';
 
 const sidebarClasses = {
     LEGALITY: 'sidebar-prices-price', // provided by Scryfall itself - used to keep layout
@@ -63,6 +63,7 @@ export const statisticHtml = `
 
 const legalBadgeHtml = `<span class="currency-wildcard legal">Yes</span>`
 const notLegalBadgeHtml = `<span class="currency-wildcard not-legal">No</span>`
+const extendedBadgeHtml = `<span class="currency-wildcard extended">Ext</span>`
 
 export abstract class StatisticsAwareMetaBar implements MetaBar {
     private readonly renderBoardEntries: boolean;
@@ -94,6 +95,12 @@ export abstract class StatisticsAwareMetaBar implements MetaBar {
             const legalityStatusElement = legalityElement.querySelector(`.${sidebarClasses.LEGALITY_STATUS}`);
             legalityStatusElement.innerHTML = deckStatistics.legalityDetails[legalityDetail] ? legalBadgeHtml : notLegalBadgeHtml;
             legalityElement.classList.remove('hidden');
+        }
+
+        if (deckStatistics.banStatus === 'extended') {
+            const legalityElement = document.querySelector(`.${sidebarClasses.LEGALITY}.${sidebarClasses.DETAIL_LEGALITY}[data-legality-detail="${LegalityDetail.CardLegality}"]`);
+            const legalityStatusElement = legalityElement.querySelector(`.${sidebarClasses.LEGALITY_STATUS}`);
+            legalityStatusElement.innerHTML = extendedBadgeHtml;
         }
 
         const totalPriceElement = document.querySelector(`.${sidebarClasses.PRICE}.${sidebarClasses.TOTAL_PRICE}`);
