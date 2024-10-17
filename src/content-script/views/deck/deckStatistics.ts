@@ -13,7 +13,7 @@ export type LegalityDetailStrings = keyof typeof LegalityDetail;
 
 export class DeckStatistics {
     private readonly _displayExtended: boolean;
-    private readonly totalSection;
+    private readonly totalSection: SectionStatistics;
     private sections: { [key: string]: SectionStatistics } = {};
     private readonly _boards: { [key: string]: SectionStatistics };
 
@@ -195,7 +195,7 @@ class SectionStatistics {
                 this._banStatus = 'banned';
                 break;
             case 'extended':
-                if (this._banStatus === null) {
+                if (this._displayExtended && this._banStatus === null) {
                     this._banStatus = 'extended';
                 }
                 break;
