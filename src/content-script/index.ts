@@ -16,40 +16,54 @@ declare global {
 }
 
 function newEnhancedView(): EnhancedView<MetaBar> {
-    const isSetPromoRoute = location.pathname.startsWith('/sets/');
-    if (location.pathname === '/search' || isSetPromoRoute) {
-        const modeSelector = document.querySelector('select#as') as HTMLInputElement;
-        if (modeSelector !== null) {
-            switch (modeSelector.value) {
-                case 'grid':
-                    return new GridSearchView(isSetPromoRoute ? 'sets' : 'search');
-                case 'full':
-                    return new FullCardView();
+    if (location.host === 'scryfall.com') {
+        const isSetPromoRoute = location.pathname.startsWith('/sets/');
+        if (location.pathname === '/search' || isSetPromoRoute) {
+            const modeSelector = document.querySelector('select#as') as HTMLInputElement;
+            if (modeSelector !== null) {
+                switch (modeSelector.value) {
+                    case 'grid':
+                        return new GridSearchView(isSetPromoRoute ? 'sets' : 'search');
+                    case 'full':
+                        return new FullCardView();
+                }
+            }
+
+            const cardProfile = document.querySelector('#main > .card-profile');
+            if (cardProfile !== null) {
+                return new FullCardView();
+            }
+
+            return new NoopView();
+        }
+
+        if (location.pathname.match(/\/decks\//)) {
+            if (document.querySelectorAll('.deck-list').length !== 0) {
+                return new ListDeckView();
+            } else if (document.querySelectorAll('.card-grid').length !== 0) {
+                return new VisualDeckView();
+            } else if (location.pathname.endsWith('/build')) {
+                return new EditDeckView();
+            } else {
+                return new NoopView();
             }
         }
 
-        const cardProfile = document.querySelector('#main > .card-profile');
-        if (cardProfile !== null) {
+        if (location.pathname.startsWith('/card/')) {
             return new FullCardView();
         }
-
-        return new NoopView();
-    }
-
-    if (location.pathname.match(/\/decks\//)) {
-        if (document.querySelectorAll('.deck-list').length !== 0) {
-            return new ListDeckView();
-        } else if (document.querySelectorAll('.card-grid').length !== 0) {
-            return new VisualDeckView();
-        } else if (location.pathname.endsWith('/build')) {
-            return new EditDeckView();
-        } else {
-            return new NoopView();
+    } else if (location.host === 'tagger.scryfall.com') {
+        if (location.pathname.startsWith('/card/')) {
+            // full-card
         }
-    }
 
-    if (location.pathname.startsWith('/card/')) {
-        return new FullCardView();
+        if (location.pathname.startsWith('/tags/card/')) {
+            // tags/card view
+        }
+
+        if (location.pathname.startsWith('/tags/artwork/')) {
+            // tags/artwork view
+        }
     }
 
     return new NoopView();
