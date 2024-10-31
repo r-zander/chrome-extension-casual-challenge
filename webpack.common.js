@@ -73,7 +73,8 @@ module.exports = env => {
                 ],
             }),
             new webpack.DefinePlugin({
-                __EXTENSION_ID__: JSON.stringify(env.extId)
+                __EXTENSION_ID__: JSON.stringify(env.extId),
+                __BROWSER__: JSON.stringify(env.browser)
             }),
         ],
     };

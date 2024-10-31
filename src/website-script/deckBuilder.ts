@@ -6,9 +6,13 @@ import {
     DeckLoadedMessageType,
     MessageType
 } from "../common/types";
+import {AxiosStatic} from "axios";
 
 declare global {
-    const __EXTENSION_ID__: string
+    const Axios: AxiosStatic;
+    const wrappedJSObject: {
+        Axios: AxiosStatic
+    }
 }
 
 function matchesPath(url: URL, regex: string): boolean {
@@ -17,7 +21,7 @@ function matchesPath(url: URL, regex: string): boolean {
 
 function initAjaxInterceptors(): void {
     // Add a response interceptor
-    Axios.interceptors.response.use(function (response) {
+    getAxios().interceptors.response.use(function (response) {
         const url = new URL(response.config.url);
         const method = response.config.method.toUpperCase();
 
@@ -85,14 +89,24 @@ function sendMessage(message: MessageType) {
     });
 }
 
+function getAxios(): AxiosStatic | undefined {
+    if (__BROWSER__ === 'CHROME') {
+        return Axios;
+    }
 
-if (typeof Axios !== 'function') {
+    if (__BROWSER__ === 'FIREFOX') {
+        return wrappedJSObject.Axios;
+    }
+}
+
+
+if (typeof getAxios() === 'function') {
+    initAjaxInterceptors();
+} else {
     const interval = setInterval(() => {
-        if (typeof Axios === 'function') {
+        if (typeof getAxios() === 'function') {
             initAjaxInterceptors();
             clearInterval(interval);
         }
     }, 10);
-} else {
-    initAjaxInterceptors();
 }

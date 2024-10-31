@@ -1,6 +1,8 @@
 import {MessageType} from "../common/types";
 import Port = chrome.runtime.Port;
 
+
+
 const deckBuilderContentScriptPorts: { [key: number]: Port } = {}
 
 function forwardMessageToContentScript(tabId: number, message: MessageType) {
@@ -17,8 +19,7 @@ function init() {
     chrome.runtime.onConnect.addListener((port: Port) => {
         console.log('onConnect');
         if (port.name === 'ContentScript.EditDeckView') {
-            console.log('Inject script to website');
-            console.log('Sender', port.sender);
+            console.log('Try to inject deck-builder-website-script.js to website');
             const tabId = port.sender.tab.id;
             console.assert(
                 !Object.prototype.hasOwnProperty.call(deckBuilderContentScriptPorts, tabId),
@@ -28,7 +29,8 @@ function init() {
             chrome.scripting.executeScript({
                 target: {tabId: tabId},
                 files: ['deck-builder-website-script.js'],
-                world: 'MAIN'
+                // Firefox doesn't support the MAIN ExecutionWorld
+                world: __BROWSER__ === 'CHROME' ? 'MAIN' : 'ISOLATED'
             }).then(() => console.log('Injected deck-builder-website-script.js'))
                 .catch(reason => console.error('Error injecting deck-builder-website-script.js.', reason));
 

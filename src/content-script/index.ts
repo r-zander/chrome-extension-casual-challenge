@@ -5,15 +5,12 @@ import {ListDeckView} from "./views/deck/view/list/listDeckView";
 import {VisualDeckView} from "./views/deck/view/visual/visualDeckView";
 import {NoopView} from "./views/noop/noopView";
 import {FullCardView} from "./views/full-card/fullCardView";
-import {AxiosStatic} from 'axios';
 import {EditDeckView} from "./views/deck/edit/editDeckView";
 import {MetaBar} from "./views/metaBar";
 
 let enhancedView: EnhancedView<MetaBar>;
 
-declare global {
-    const Axios: AxiosStatic;
-}
+
 
 function newEnhancedView(): EnhancedView<MetaBar> {
     const isSetPromoRoute = location.pathname.startsWith('/sets/');
