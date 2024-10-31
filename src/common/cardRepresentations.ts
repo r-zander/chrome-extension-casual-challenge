@@ -1,5 +1,5 @@
 import {CardLegality, ScryfallUUID} from "./types";
-import {Card, Format} from "scryfall-api";
+import {Card, Format, Game} from "scryfall-api";
 
 export class CasualChallengeCard {
     public readonly budgetPoints: number;
@@ -34,19 +34,22 @@ export class CachedScryfallCard {
     public readonly legalities: PaperLegalities;
     public readonly cachedAt: number;
     public readonly layout: keyof typeof Layout;
+    public readonly games: (keyof typeof Game)[];
 
     protected constructor(
         id: ScryfallUUID,
         name: string,
         legalities: PaperLegalities,
         cachedAt: number,
-        layout: keyof typeof Layout
+        layout: keyof typeof Layout,
+        games: (keyof typeof Game)[]
     ) {
         this.id = id;
         this.name = name;
         this.legalities = legalities;
         this.cachedAt = cachedAt;
         this.layout = layout;
+        this.games = games;
     }
 
     public static fromScryfallCard(cardFromApi: ScryfallCard, cachedAt: number): CachedScryfallCard {
@@ -62,7 +65,8 @@ export class CachedScryfallCard {
                 pauper: cardFromApi.legalities.pauper,
             },
             cachedAt,
-            this.getLayout(cardFromApi)
+            this.getLayout(cardFromApi),
+            cardFromApi.games
         );
     }
 
@@ -128,7 +132,8 @@ export class FullCard extends CachedScryfallCard implements StatisticsCard {
             cachedCard.name,
             cachedCard.legalities,
             cachedCard.cachedAt,
-            cachedCard.layout
+            cachedCard.layout,
+            cachedCard.games
         );
 
         this.budgetPoints = ccCard.budgetPoints;
