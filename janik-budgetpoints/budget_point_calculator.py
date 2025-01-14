@@ -1,7 +1,12 @@
-import json
-import requests
-import zipfile
 import io
+import json
+import re
+import zipfile
+
+import psycopg2
+import requests
+import unicodedata
+from psycopg2 import sql
 
 printingsFileName = 'AllPrintings.json'
 printingsFilePath = '.\\' + printingsFileName
@@ -230,7 +235,9 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 					continue
 
 			if cardName not in allCardVersion:
-				allCardVersion[cardName] = {}
+				allCardVersion[cardName] = {
+					'scryfallOracleId': card['identifiers']['scryfallOracleId']
+				}
 			allCardVersion[cardName][card['uuid']] = {
 				'setCode': card['setCode'],
 				'hasFoil': card['hasFoil'],
@@ -239,6 +246,85 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 	# if (len(allCardVersion) >= 5000):
 	# 	break
 	return allCardVersion
+
+
+# Card Name Normalization
+# 1. Replace any diacritic character with its base version
+# 2. Replace anything that is not a letter or number with - (dash)
+# 3. Replace repeating instances of - (dash) with a single - (dash)
+# 4. Lower case
+def normalizeCardName(cardName):
+	# Replace diacritic characters
+	normalized = unicodedata.normalize('NFD', cardName)
+	normalized = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+	# Replace non-alphanumeric characters with "-"
+	normalized = re.sub(r'[^a-zA-Z0-9]', '-', normalized)
+	# Replace multiple "-" with a single "-"
+	normalized = re.sub(r'-+', '-', normalized)
+	# Remove leading and trailing dashes
+	normalized = normalized.strip('-')
+	# Convert to lowercase
+	normalized = normalized.lower()
+	return normalized
+
+
+def fill_database(allCards):
+	try:
+		# Connect to PostgreSQL database
+		connection = psycopg2.connect(
+			dbname="casual_challenge",
+			user="postgres",
+			password="abcABC1234",
+			host="localhost",
+			port="5432"
+		)
+		cursor = connection.cursor()
+
+		normalizedCardNames = {}
+		oracleIds = {}
+
+		# Iterate over cards and insert them into the "card" table
+		for cardName in allCards:
+			oracleId = allCards[cardName]['scryfallOracleId']
+			normalizedCardName = normalizeCardName(cardName)
+			if normalizedCardName not in normalizedCardNames:
+				normalizedCardNames[normalizedCardName] = [cardName]
+			else:
+				normalizedCardNames[normalizedCardName].append(cardName)
+				print('Duplicate normalized name found for:', normalizedCardNames[normalizedCardName])
+				continue
+
+			if oracleId not in oracleIds:
+				oracleIds[oracleId] = [cardName]
+			else:
+				oracleIds[oracleId].append(cardName)
+				print('Duplicate oracle id found for:', oracleIds[oracleId])
+				continue
+
+			try:
+				# Insert data into the database using a parameterized query
+				cursor.execute(
+					sql.SQL("INSERT INTO casual_challenge.public.card (oracle_id, name, normalized_name) VALUES (%s, %s, %s)")
+					.format(),
+					(oracleId, cardName, normalizedCardName)
+				)
+			except Exception as error:
+				print("Error while inserting data into database:", error)
+
+		# Commit all changes to the database
+		connection.commit()
+		print("Database successfully filled with cards.")
+
+	except Exception as error:
+		print("Other database error:", error)
+		raise error
+
+	finally:
+		# Close the cursor and connection
+		if cursor:
+			cursor.close()
+		if connection:
+			connection.close()
 
 
 def calculateMissingPrices(isDebug=False):
@@ -257,7 +343,7 @@ def calculateMissingPrices(isDebug=False):
 	if isDebug: print(fixedCards)
 
 
-totalSteps = 9
+totalSteps = 11
 step = 0
 digits = len(str(totalSteps))
 print(f'{step:0{digits}d} / {totalSteps:d} | Untap, Upkeep, Draw!')
@@ -297,9 +383,15 @@ for basic in basics:
 		'USD': basicPrices,
 	}
 
-# Create a "decklist" with every card in existance
+# Create a "decklist" with every card in existence
 allCards = getAllCardVersions()
 print('Done building Card Dictionary: ' + str(len(allCards)))
+
+
+# print(f'{step:0{digits}d} / {totalSteps:d} | Fill cards into database.')
+# step += 1
+# fill_database(allCards)
+# print('Done filling database.')
 
 # Uncomment to look at a single card in detail
 # allCards = {
