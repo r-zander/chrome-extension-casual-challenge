@@ -518,6 +518,16 @@ def determineLegality(cardName, legalities, budgetPoints, isCCBanned, isCCExtend
 	return 'legal'
 
 
+def isCardFlipStyle(cardName):
+	# Check if card name contains "//"
+	if "//" in cardName:
+		parts = cardName.split(" // ")
+		# Ensure the part before and after "//" are the same
+		if parts[0].strip() == parts[1].strip():
+			return True
+	return False
+
+
 def createCardSeasonDataImportMigration(allCards):
 	# Definition of the table we are trying to fill:
 	#
@@ -555,6 +565,9 @@ def createCardSeasonDataImportMigration(allCards):
 	# now() just uses the system clock which is what we want when we create migration file names
 	with open(outputPath + datetime.now().strftime("%Y%m%d_%H%M") + "_insert_card_season_data.sql", "w", encoding="utf-8") as f:
 		for i, (cardName, budgetPoints) in enumerate(seasonCardPrices.items()):
+			if isCardFlipStyle(cardName):
+				continue
+			
 			cardData = allCards[cardName]
 
 			cardOracleId = cardData['scryfallOracleId']
@@ -641,8 +654,6 @@ def createCardSeasonDataImportMigration(allCards):
 
 	return
 
-# TODO 12a6cad9-eb42-43bd-9e68-aaf862cd83db is a duplicate (and quite possibly more)
-
 
 totalSteps = 6
 step = 0
@@ -672,9 +683,9 @@ for basic in basics:
 allCards = getAllCardVersions()
 print('Done building Card Dictionary: ' + str(len(allCards)))
 
-# print(f'{step:0{digits}d} / {totalSteps:d} | Create import migration for table "card".')
-# step += 1
-# createCardImportMigration(allCards)
+print(f'{step:0{digits}d} / {totalSteps:d} | Create import migration for table "card".')
+step += 1
+createCardImportMigration(allCards)
 
 print(f'{step:0{digits}d} / {totalSteps:d} | Create import migration for table "card_season_data".')
 step += 1
