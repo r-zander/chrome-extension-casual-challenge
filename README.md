@@ -53,6 +53,12 @@ Other versions might or might not work - in theory there is nothing hard-bound t
 * Visit https://addons.mozilla.org/en-US/developers/addon/scryfall-casual-challenge/versions/submit/
 * Upload the zip file
 * Firefox wants to have the source files --> upload `\chrome-extension-casual-challenge\chrome-extension-casual-challenge.zip`
+* Describe Version  
+These are the standard text templates. If anything else changed, you need to indicate this to ensure a quick release.
+  * Release Notes:
+  > Welcome to Casual Challenge Season ##! New bans, new budget points and new playable cards from ???.
+  * Notes to Reviewer:
+  > Updated contained data JSONs.
 * Once the review was successful, the developer account will receive a notification via email
 
 ## Credits

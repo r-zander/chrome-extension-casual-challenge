@@ -17,8 +17,8 @@ pricesFilePath = '.\\' + pricesFileName
 ignoredPricesFilePath = '.\\IgnoredPrices.json'
 outputPath = '..\\data\\card-prices.json'
 
-earliestDate = 20240411  # inclusive
-latestDate = 20250113  # exclusive
+earliestDate = 20250104  # inclusive
+latestDate = 20250314  # exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
