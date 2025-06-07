@@ -7,10 +7,6 @@ import {
     MessageType
 } from "../common/types";
 
-declare global {
-    const __EXTENSION_ID__: string
-}
-
 function matchesPath(url: URL, regex: string): boolean {
     return url.pathname.match(new RegExp(regex)) !== null;
 }

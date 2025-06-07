@@ -41,7 +41,7 @@ function newEnhancedView(): EnhancedView<MetaBar> {
             return new ListDeckView();
         } else if (document.querySelectorAll('.card-grid').length !== 0) {
             return new VisualDeckView();
-        } else if (location.pathname.endsWith('/build')) {
+        } else if (location.pathname.endsWith('/build') && __BROWSER__ === 'CHROME') {
             return new EditDeckView();
         } else {
             return new NoopView();
