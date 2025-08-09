@@ -2,8 +2,10 @@ import datetime
 import io
 import json
 import re
+import sys
 import zipfile
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 import requests
 import unicodedata
@@ -11,103 +13,113 @@ import unicodedata
 printingsFileName = 'AllPrintings.json'
 printingsFilePath = '.\\' + printingsFileName
 
+seasonToImport = 18
 
-importFolder = '.\\season-16\\'
+importFolder = f'.\\season-{seasonToImport}\\'
 bansFile = 'bans.json'
 extendedBansFile = 'extended-bans.json'
 pricesFile = 'card-prices.json'
 
 
-
-outputPath = '.\\output\\'
+outputPath = f'.\\output\\season-{seasonToImport}\\'
 
 # seasonNumber => season info
 seasons = {
 	0: {
 		"id": 0,
 		"startDate": date(2021, 4, 1),
-		"endDate": date(2021, 11, 30)
+		"endDate": date(2021, 11, 30),
 	},
 	1: {
 		"id": 1,
 		"startDate": date(2021, 12, 1),
-		"endDate": date(2022, 3, 31)
+		"endDate": date(2022, 3, 31),
 	},
 	2: {
 		"id": 2,
 		"startDate": date(2022, 4, 1),
-		"endDate": date(2022, 5, 31)
+		"endDate": date(2022, 5, 31),
 	},
 	3: {
 		"id": 3,
 		"startDate": date(2022, 6, 1),
-		"endDate": date(2022, 7, 31)
+		"endDate": date(2022, 7, 31),
 	},
 	4: {
 		"id": 4,
 		"startDate": date(2022, 8, 1),
-		"endDate": date(2022, 9, 30)
+		"endDate": date(2022, 9, 30),
 	},
 	5: {
 		"id": 5,
 		"startDate": date(2022, 10, 1),
-		"endDate": date(2022, 11, 30)
+		"endDate": date(2022, 11, 30),
 	},
 	6: {
 		"id": 6,
 		"startDate": date(2022, 12, 1),
-		"endDate": date(2023, 2, 28)
+		"endDate": date(2023, 2, 28),
 	},
 	7: {
 		"id": 7,
 		"startDate": date(2023, 3, 1),
-		"endDate": date(2023, 4, 30)
+		"endDate": date(2023, 4, 30),
 	},
 	8: {
 		"id": 8,
 		"startDate": date(2023, 5, 1),
-		"endDate": date(2023, 6, 30)
+		"endDate": date(2023, 6, 30),
 	},
 	9: {
 		"id": 9,
 		"startDate": date(2023, 7, 1),
-		"endDate": date(2023, 9, 1)
+		"endDate": date(2023, 9, 1),
 	},
 	10: {
 		"id": 10,
 		"startDate": date(2023, 9, 2),
-		"endDate": date(2023, 9, 10)
+		"endDate": date(2023, 9, 10),
 	},
 	11: {
 		"id": 11,
 		"startDate": date(2023, 11, 11),
-		"endDate": date(2024, 2, 2)
+		"endDate": date(2024, 2, 2),
 	},
 	12: {
 		"id": 12,
 		"startDate": date(2024, 3, 2),
-		"endDate": date(2024, 5, 10)
+		"endDate": date(2024, 5, 10),
 	},
 	13: {
 		"id": 13,
 		"startDate": date(2024, 5, 28),
-		"endDate": date(2024, 8, 10)
+		"endDate": date(2024, 8, 10),
 	},
 	14: {
 		"id": 14,
 		"startDate": date(2024, 8, 11),
-		"endDate": date(2024, 10, 11)
+		"endDate": date(2024, 10, 11),
 	},
 	15: {
 		"id": 15,
 		"startDate": date(2024, 10, 12),
-		"endDate": date(2024, 12, 27)
+		"endDate": date(2024, 12, 27),
 	},
 	16: {
 		"id": 16,
 		"startDate": date(2025, 1, 13),
-		"endDate": date(2025, 3, 14)
-	}
+		"endDate": date(2025, 3, 14),
+	},
+	17: {
+		"id": 17,
+		"startDate": date(2025, 3, 15),
+		"endDate": date(2025, 6, 6),
+	},
+	18: {
+		"id": 18,
+		"startDate": date(2025, 6, 7),
+		"endDate": date(2025, 8, 15),
+	},
 }
 
 
@@ -136,166 +148,6 @@ def download(url, fileName):
 		print(f"Failed to download {url}. Status code: {response.status_code}\n{response.text}")
 
 
-def getPricesWhithinTimeRange(pricesPerDay):
-	pricesWithinTimeRange = {}
-	for price in pricesPerDay:
-		x = price.split('-')
-		# TODO suspicious
-		# Converting a date string 2022-02-01 into the number 20220201 for comparisons
-		dateNumber = int(x[0]) * 10000 + int(x[1]) * 100 + int(x[2])
-		if dateNumber >= earliestDate and dateNumber < latestDate:
-			pricesWithinTimeRange[dateNumber] = (pricesPerDay[price])
-	return pricesWithinTimeRange
-
-
-def getCheapestPrintAverage(pricesPerPrintings):
-	allAverages = []
-	for printing in pricesPerPrintings:
-		if len(pricesPerPrintings[printing]) == 0:
-			continue
-		sum = 0
-		for date in pricesPerPrintings[printing]:
-			sum += pricesPerPrintings[printing][date]
-		allAverages.append(sum / len(pricesPerPrintings[printing]))
-	if len(allAverages) == 0:
-		return 0
-	cheapestAverage = allAverages[0]
-	for average in allAverages:
-		if cheapestAverage > average:
-			cheapestAverage = average
-	return cheapestAverage
-
-
-def getCheapestPerDayAverage(pricesPerPrintings):
-	allMinimumDayPrices = []
-	allDates = []
-	for printing in pricesPerPrintings:
-		if len(pricesPerPrintings[printing]) == 0:
-			continue
-		for date in pricesPerPrintings[printing]:
-			if date not in allDates:
-				allDates.append(date)
-	if len(allDates) == 0:
-		return 0
-	for date in allDates:
-		minimumPrice = -1
-		for printing in pricesPerPrintings:
-			if date in pricesPerPrintings[printing]:
-				if minimumPrice < 0 or minimumPrice > pricesPerPrintings[printing][date]:
-					minimumPrice = pricesPerPrintings[printing][date]
-		allMinimumDayPrices.append(minimumPrice)
-	sum = 0
-	for average in allMinimumDayPrices:
-		sum += average
-	return sum / len(allMinimumDayPrices)
-
-
-def checkForAnomalies(pricesPerPrintings, cardName, uuidAttributes, isDebug=False):
-	uuidsToBeRemoved = []
-	for uuid, prices in pricesPerPrintings.items():
-		if len(prices) == 0:
-			continue
-
-		knownPrice = -1
-		allPricesMatch = True
-		for price in prices.values():
-			if knownPrice == -1:
-				knownPrice = price
-			elif knownPrice != price:
-				allPricesMatch = False
-				break
-		if allPricesMatch:
-			# if isDebug:
-			# 	if uuid.endswith('-foil'):
-			# 		print('Price anomaly for ' + cardName + ' FOIL (' + str(
-			# 			uuidAttributes[uuid.replace('-foil', '')]) + '): All prices are ' + str(knownPrice))
-			# 	else:
-			# 		print(
-			# 			'Price anomaly for ' + cardName + ' (' + str(uuidAttributes[uuid]) + '): All prices are ' + str(
-			# 				knownPrice))
-			uuidsToBeRemoved.append(uuid)
-
-	if len(pricesPerPrintings) > len(uuidsToBeRemoved):
-		for uuid in uuidsToBeRemoved:
-			pricesPerPrintings.pop(uuid)
-	else:
-		if isDebug: print('For ' + cardName + ' all prices had anomalies.')
-
-
-def tryFindingRawPricesForCard(rawCardEurPrices, paperPrice, marketIdentifier, attributes, printingPriceUUID):
-	if marketIdentifier not in paperPrice:
-		return
-
-	marketPrice = paperPrice[marketIdentifier]
-	if 'retail' not in marketPrice:
-		return
-
-	marketRetailPrice = marketPrice['retail']
-	if attributes['hasNonFoil'] == True and 'normal' in marketRetailPrice:
-		rawCardEurPrices[printingPriceUUID] = getPricesWhithinTimeRange(marketRetailPrice['normal'])
-	if attributes['hasFoil'] == True and 'foil' in marketRetailPrice:
-		rawCardEurPrices[printingPriceUUID + '-foil'] = getPricesWhithinTimeRange(marketRetailPrice['foil'])
-
-
-def finalizeCardPrice(cardName, isDebug, mode, rawCardEurPrices, uuidAttributes):
-	# if isDebug: print('rawCardEurPrices:' + str(rawCardEurPrices))
-	checkForAnomalies(rawCardEurPrices, cardName, uuidAttributes, isDebug)
-	if mode == 'CheapestPrintAverage':
-		price = getCheapestPrintAverage(rawCardEurPrices)
-	elif mode == 'CheapestPerDayAverage':
-		price = getCheapestPerDayAverage(rawCardEurPrices)
-	else:
-		raise ValueError('Unsupported mode ' + mode)
-	return price
-
-
-def calculatePricesForCard(cardName, uuidAttributes, mode='CheapestPerDayAverage', isDebug=False):
-	# if isDebug: print('calculatePricesForCard ' + cardName)
-	# if isDebug: print('UUIDs and Attributes: ' + str(uuidAttributes))
-	rawCardEurPrices = {}
-	rawCardUsdPrices = {}
-	calculatedAveragePrices = {}
-	for printingPriceUUID, attributes in uuidAttributes.items():
-		if printingPriceUUID not in rawPrices:
-			continue
-		priceEntry = rawPrices[printingPriceUUID]
-		if 'paper' not in priceEntry:
-			continue
-		tryFindingRawPricesForCard(rawCardEurPrices, priceEntry['paper'], 'cardmarket', attributes, printingPriceUUID)
-		tryFindingRawPricesForCard(rawCardUsdPrices, priceEntry['paper'], 'tcgplayer', attributes, printingPriceUUID)
-
-	eurPrice = finalizeCardPrice(cardName, isDebug, mode, rawCardEurPrices, uuidAttributes)
-	usdPrice = finalizeCardPrice(cardName, isDebug, mode, rawCardUsdPrices, uuidAttributes)
-
-	cardPrices[cardName] = {
-		'EUR': round(eurPrice * 100),
-		'USD': round(usdPrice * 100),
-		'exR': usdPrice / eurPrice if eurPrice > 0 else None
-	}
-
-
-# if isDebug: print('calculatedAveragePrices: ' + str(cardPrices[cardName]))
-
-
-def getDecklistPrice(decklist, mode='CheapestPerDayAverage', isDebug=False):
-	global avgExchangeRate
-
-	totalDeckPrice = 0
-	totalExchangeRate = 0
-	exchangeRateCount = 0
-	for cardName in decklist:
-		if cardName not in cardPrices:
-			calculatePricesForCard(cardName, decklist[cardName], mode, isDebug)
-			if len(cardPrices) % 500 == 0:
-				print(f'{len(cardPrices):05d} cards done.')
-			if cardPrices[cardName]['exR'] is not None:
-				totalExchangeRate += cardPrices[cardName]['exR']
-				exchangeRateCount += 1
-		totalDeckPrice += cardPrices[cardName]['EUR']
-
-	avgExchangeRate = totalExchangeRate / exchangeRateCount
-	print(f'{len(cardPrices):05d} cards done.')
-	return totalDeckPrice
 
 
 # FetchAllPrintings that should be considered for price evaluation
@@ -356,6 +208,8 @@ def normalizeCardName(cardName):
 	# Replace diacritic characters
 	normalized = unicodedata.normalize('NFD', cardName)
 	normalized = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+	# Strip single quotes
+	normalized = normalized.replace("'", '')
 	# Replace non-alphanumeric characters with "-"
 	normalized = re.sub(r'[^a-zA-Z0-9]', '-', normalized)
 	# Replace multiple "-" with a single "-"
@@ -370,6 +224,8 @@ def somewhatNormalizeCardName(cardName):
 	# Replace diacritic characters
 	normalized = unicodedata.normalize('NFD', cardName)
 	normalized = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+	# Strip single quotes
+	normalized = normalized.replace("'", '')
 	# Replace whitespace characters with "-"
 	normalized = re.sub(r'\s', '-', normalized)
 	# Replace multiple "-" with a single "-"
@@ -410,7 +266,7 @@ def createCardImportMigration(allCards):
 	added_at_str = f"'{datetime.now(timezone.utc).isoformat(timespec='seconds')}'"
 
 	# now() just uses the system clock which is what we want when we create migration file names
-	with open(outputPath + datetime.now().strftime("%Y%m%d_%H%M") + "_insert_cards.sql", "w", encoding="utf-8") as f:
+	with open(outputPath + datetime.now().strftime("%Y%m%d_%H%M") + "_01_insert_cards.sql", "w", encoding="utf-8") as f:
 		# Iterate over cards and insert them into the "card" table
 		for i, (cardName, cardData) in enumerate(allCards.items()):
 			oracleId = cardData['scryfallOracleId']
@@ -449,7 +305,8 @@ def createCardImportMigration(allCards):
 			if (i > 0) and (i % chunk_size == 0):
 				insert_statement = (
 						"INSERT INTO public.card (oracle_id, \"name\", normalized_name, added_at)\n"
-						"VALUES\n    " + ",\n".join(values_list) + ";\n"
+						"VALUES\n    " + ",\n".join(values_list) + "\n"
+						"ON CONFLICT (oracle_id) DO NOTHING;\n"
 				)
 				f.write(insert_statement)
 				values_list = []
@@ -460,7 +317,8 @@ def createCardImportMigration(allCards):
 		if values_list:
 			insert_statement = (
 					"INSERT INTO public.card (oracle_id, \"name\", normalized_name, added_at)\n"
-					"VALUES\n    " + ",\n".join(values_list) + ";\n"
+					"VALUES\n    " + ",\n".join(values_list) + "\n"
+					"ON CONFLICT (oracle_id) DO NOTHING;\n"
 			)
 			f.write(insert_statement)
 
@@ -503,7 +361,7 @@ def determineLegality(cardName, legalities, budgetPoints, isCCBanned, isCCExtend
 	if budgetPoints is None or budgetPoints == 0:
 		return 'not_legal'
 
-	if 'vintage' in legalities and legalities['vintage'] == 'Restricted':
+	if 'vintage' in legalities and legalities['vintage'].casefold() == 'restricted':
 		return 'banned'
 
 	if isCCBanned:
@@ -523,7 +381,8 @@ def isCardFlipStyle(cardName):
 	if "//" in cardName:
 		parts = cardName.split(" // ")
 		# Ensure the part before and after "//" are the same
-		if parts[0].strip() == parts[1].strip():
+		# Change 09.08.2025 ensure the first and LAST part are the same - this also covers flip-adventure cards like https://scryfall.com/card/tdm/381/bloomvine-regent-claim-territory-bloomvine-regent
+		if parts[0].strip() == parts[len(parts) -1].strip():
 			return True
 	return False
 
@@ -550,7 +409,7 @@ def createCardSeasonDataImportMigration(allCards):
 	# 	PRIMARY KEY (id)
 	# );
 
-	seasonId = seasons[16]['id']
+	seasonId = seasons[seasonToImport]['id']
 
 	print("Read card-prices.json")
 	with open(importFolder + pricesFile, 'r', encoding='utf-8') as f:
@@ -563,11 +422,15 @@ def createCardSeasonDataImportMigration(allCards):
 	values_list = []
 
 	# now() just uses the system clock which is what we want when we create migration file names
-	with open(outputPath + datetime.now().strftime("%Y%m%d_%H%M") + "_insert_card_season_data.sql", "w", encoding="utf-8") as f:
+	with open(outputPath + datetime.now().strftime("%Y%m%d_%H%M") + f"_02_insert_card_season_data_for_season_{seasonId}.sql", "w", encoding="utf-8") as f:
 		for i, (cardName, budgetPoints) in enumerate(seasonCardPrices.items()):
 			if isCardFlipStyle(cardName):
 				continue
-			
+
+			if cardName not in allCards:
+				print('Card missing in allCards: ' + cardName, file=sys.stderr)
+				continue
+
 			cardData = allCards[cardName]
 
 			cardOracleId = cardData['scryfallOracleId']
@@ -585,7 +448,7 @@ def createCardSeasonDataImportMigration(allCards):
 			)
 			# TODO eh? have all formats?
 			bannedIn = bannedInFormats[0] if len(bannedInFormats) > 0 else None
-			if ('vintage' in legalities and legalities['vintage'] == 'restricted'):
+			if 'vintage' in legalities and legalities['vintage'].casefold() == 'restricted':
 				vintageRestricted = 'TRUE'
 			else:
 				vintageRestricted = 'FALSE'
@@ -655,12 +518,17 @@ def createCardSeasonDataImportMigration(allCards):
 	return
 
 
-totalSteps = 6
+totalSteps = 5
 step = 0
 digits = len(str(totalSteps))
 print(f'{step:0{digits}d} / {totalSteps:d} | Untap, Upkeep, Draw!')
 step += 1
 
+print(f'{step:0{digits}d} / {totalSteps:d} | (Optional) Download AllPrintings.json from mtgjson.com')
+choice = input("Do you want to download a fresh copy of AllPrintings.json? [y/N]: ").strip().lower() or "N"
+if choice == "y":
+	print('Downloading fresh AllPrintings.json.')
+	download('https://mtgjson.com/api/v5/AllPrintings.json.zip', printingsFileName)
 
 print(f'{step:0{digits}d} / {totalSteps:d} | Reading printings')
 step += 1
@@ -682,6 +550,9 @@ for basic in basics:
 # Create a "decklist" with every card in existence
 allCards = getAllCardVersions()
 print('Done building Card Dictionary: ' + str(len(allCards)))
+
+print(f'{step:0{digits}d} / {totalSteps:d} | Create output folder.')
+Path(outputPath).mkdir(parents=True, exist_ok=True)
 
 print(f'{step:0{digits}d} / {totalSteps:d} | Create import migration for table "card".')
 step += 1
