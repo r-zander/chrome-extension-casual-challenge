@@ -421,6 +421,24 @@ def createCardSeasonDataImportMigration(allCards):
 	chunk_size = 1000
 	values_list = []
 
+	def write_upsert_batch(f, values_list):
+		insert_statement = (
+			"INSERT INTO public.card_season_data (season_id, card_oracle_id, budget_points, legality, meta_share_standard, meta_share_pioneer, meta_share_modern, meta_share_legacy, meta_share_vintage, meta_share_pauper, banned_in, vintage_restricted)\n"
+			"VALUES\n    " + ",\n".join(values_list) + "\n"
+			"ON CONFLICT (season_id, card_oracle_id) DO UPDATE SET\n"
+			"    budget_points = EXCLUDED.budget_points,\n"
+			"    legality = EXCLUDED.legality,\n"
+			"    meta_share_standard = EXCLUDED.meta_share_standard,\n"
+			"    meta_share_pioneer = EXCLUDED.meta_share_pioneer,\n"
+			"    meta_share_modern = EXCLUDED.meta_share_modern,\n"
+			"    meta_share_legacy = EXCLUDED.meta_share_legacy,\n"
+			"    meta_share_vintage = EXCLUDED.meta_share_vintage,\n"
+			"    meta_share_pauper = EXCLUDED.meta_share_pauper,\n"
+			"    banned_in = EXCLUDED.banned_in,\n"
+			"    vintage_restricted = EXCLUDED.vintage_restricted;\n"
+		)
+		f.write(insert_statement)
+
 	# now() just uses the system clock which is what we want when we create migration file names
 	with open(outputPath + datetime.now().strftime("%Y%m%d_%H%M") + f"_02_insert_card_season_data_for_season_{seasonId}.sql", "w", encoding="utf-8") as f:
 		for i, (cardName, budgetPoints) in enumerate(seasonCardPrices.items()):
@@ -436,8 +454,18 @@ def createCardSeasonDataImportMigration(allCards):
 			cardOracleId = cardData['scryfallOracleId']
 			legalities = cardData['legalities']
 			bannedInFormats = bannedFormats(legalities)
-			isCCBanned = (cardName in bansByName)
-			isCCExtendedBanned = (cardName in extendedBansByName)
+			# Check ban status, handling double-sided cards
+			checkName = cardName
+			if '//' in cardName:
+				checkName = cardName.split('//')[0].strip()
+			
+			# Store ban lookup results to avoid repetitive checks
+			banEntry = bansByName.get(cardName) or bansByName.get(checkName)
+			extendedBanEntry = extendedBansByName.get(cardName) or extendedBansByName.get(checkName)
+			
+			isCCBanned = banEntry is not None
+			isCCExtendedBanned = extendedBanEntry is not None
+			
 			legality = determineLegality(
 				cardName,
 				legalities,
@@ -453,42 +481,20 @@ def createCardSeasonDataImportMigration(allCards):
 			else:
 				vintageRestricted = 'FALSE'
 
-			meta_share_standard = 'NULL'
-			if isCCExtendedBanned and 'Standard' in extendedBansByName[cardName]:
-				meta_share_standard = extendedBansByName[cardName]['Standard']
-			elif isCCBanned and 'Standard' in bansByName[cardName]:
-				meta_share_standard = bansByName[cardName]['Standard']
+			# Helper function to get meta share for a format
+			def getMetaShare(formatName):
+				if extendedBanEntry and formatName in extendedBanEntry:
+					return extendedBanEntry[formatName]
+				elif banEntry and formatName in banEntry:
+					return banEntry[formatName]
+				return 'NULL'
 
-			meta_share_pioneer = 'NULL'
-			if isCCExtendedBanned and 'Pioneer' in extendedBansByName[cardName]:
-				meta_share_pioneer = extendedBansByName[cardName]['Pioneer']
-			elif isCCBanned and 'Pioneer' in bansByName[cardName]:
-				meta_share_pioneer = bansByName[cardName]['Pioneer']
-
-			meta_share_modern = 'NULL'
-			if isCCExtendedBanned and 'Modern' in extendedBansByName[cardName]:
-				meta_share_modern = extendedBansByName[cardName]['Modern']
-			elif isCCBanned and 'Modern' in bansByName[cardName]:
-				meta_share_modern = bansByName[cardName]['Modern']
-
-			meta_share_legacy = 'NULL'
-			if isCCExtendedBanned and 'Legacy' in extendedBansByName[cardName]:
-				meta_share_legacy = extendedBansByName[cardName]['Legacy']
-			elif isCCBanned and 'Legacy' in bansByName[cardName]:
-				meta_share_legacy = bansByName[cardName]['Legacy']
-
-			meta_share_vintage = 'NULL'
-			if isCCExtendedBanned and 'Vintage' in extendedBansByName[cardName]:
-				meta_share_vintage = extendedBansByName[cardName]['Vintage']
-			elif isCCBanned and 'Vintage' in bansByName[cardName]:
-				meta_share_vintage = bansByName[cardName]['Vintage']
-
-			meta_share_pauper = 'NULL'
-			if isCCExtendedBanned and 'Pauper' in extendedBansByName[cardName]:
-				meta_share_pauper = extendedBansByName[cardName]['Pauper']
-			elif isCCBanned and 'Pauper' in bansByName[cardName]:
-				meta_share_pauper = bansByName[cardName]['Pauper']
-
+			meta_share_standard = getMetaShare('Standard')
+			meta_share_pioneer = getMetaShare('Pioneer')
+			meta_share_modern = getMetaShare('Modern')
+			meta_share_legacy = getMetaShare('Legacy')
+			meta_share_vintage = getMetaShare('Vintage')
+			meta_share_pauper = getMetaShare('Pauper')
 
 			dbLegality = f"'{legality}'::legality"
 			if bannedIn is None:
@@ -498,22 +504,14 @@ def createCardSeasonDataImportMigration(allCards):
 			values_list.append(f"\t({seasonId}, {sql_escape_uuid(cardOracleId)}, {budgetPoints}, {dbLegality}, {meta_share_standard}, {meta_share_pioneer}, {meta_share_modern}, {meta_share_legacy}, {meta_share_vintage}, {meta_share_pauper}, {dbBannedIn}, {vintageRestricted})")
 			# When we hit chunk_size or last row, write out the batch
 			if (i > 0) and (i % chunk_size == 0):
-				insert_statement = (
-						"INSERT INTO public.card_season_data (season_id, card_oracle_id, budget_points, legality, meta_share_standard, meta_share_pioneer, meta_share_modern, meta_share_legacy, meta_share_vintage, meta_share_pauper, banned_in, vintage_restricted)\n"
-						"VALUES\n    " + ",\n".join(values_list) + ";\n"
-				)
-				f.write(insert_statement)
+				write_upsert_batch(f, values_list)
 				values_list = []
 				print(f'{i:05d} rows written.')
 		# end for
 
 		# If anything remains after the loop, write it
 		if values_list:
-			insert_statement = (
-					"INSERT INTO public.card_season_data (season_id, card_oracle_id, budget_points, legality, meta_share_standard, meta_share_pioneer, meta_share_modern, meta_share_legacy, meta_share_vintage, meta_share_pauper, banned_in, vintage_restricted)\n"
-					"VALUES\n    " + ",\n".join(values_list) + ";\n"
-			)
-			f.write(insert_statement)
+			write_upsert_batch(f, values_list)
 
 	return
 
