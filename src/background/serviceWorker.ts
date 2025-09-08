@@ -9,17 +9,56 @@ import {
 } from '../common/types';
 import {StorageKeys} from "../common/storage";
 import {SerializableMap} from "../common/serializableMap";
-import CardPrices from "../../data/card-prices.json";
-import RawBans from "../../data/bans.json";
-import RawExtendedBans from "../../data/extended-bans.json";
 import {isBasicLand} from "../common/casualChallengeLogic";
 import {deckBuilder} from "./deckBuilder";
+import {ApiClient} from "./apiClient";
 
-const bans = loadBans(RawBans);
-const extendedBans = loadBans(RawExtendedBans);
-const budgetPoints: Map<string, number> = loadBudgetPoints(CardPrices);
+let bans: Bans = new SerializableMap<string, BanFormats>();
+let extendedBans: Bans = new SerializableMap<string, BanFormats>();
+let budgetPoints: Map<string, number> = new Map<string, number>();
+let isDataLoaded = false;
+
+const apiClient = ApiClient.getInstance();
 
 console.info('Scryfall - Casual Challenge Checker: Service Worker running!');
+
+async function initializeData(): Promise<void> {
+    if (isDataLoaded) {
+        return;
+    }
+
+    try {
+        console.log('Loading data from API...');
+        const data = await apiClient.getData();
+        
+        bans = loadBans(data.bans);
+        extendedBans = loadBans(data.extendedBans);
+        budgetPoints = loadBudgetPoints(data.cardPrices);
+        
+        isDataLoaded = true;
+        console.log('Data loaded successfully from API');
+    } catch (error) {
+        console.error('Failed to load data from API:', error);
+        // Could implement fallback to static files here if needed
+        throw error;
+    }
+}
+
+async function preloadData(): Promise<void> {
+    try {
+        console.log('Pre-loading data to warm up cache...');
+        await apiClient.getData();
+        console.log('Data pre-loaded successfully');
+    } catch (error) {
+        console.error('Failed to pre-load data:', error);
+    }
+}
+
+
+chrome.runtime.onStartup.addListener(() => {
+    console.log('Extension startup: pre-loading data...');
+    preloadData();
+});
 
 chrome.runtime.onInstalled.addListener(
     (details) => {
@@ -30,6 +69,10 @@ chrome.runtime.onInstalled.addListener(
             // noinspection JSIgnoredPromiseFromCall
             chrome.storage.local.remove(StorageKeys.CARD_CACHE);
         }
+        
+        // Pre-load data on installation or update
+        console.log(`Extension ${details.reason}: pre-loading data...`);
+        preloadData();
     }
 )
 
@@ -39,27 +82,37 @@ chrome.runtime.onMessage.addListener(
             console.error('Received request without mandatory action property.', request);
             return;
         }
-        switch (request.action) {
-            case 'get/ban/list':
-                sendBanList(sendResponse);
-                return;
-            case 'get/ban/card':
-                sendBanStatus(request.cardName, sendResponse);
-                return;
-            case 'get/card/info':
-                sendCardInfo(request.cardName, sendResponse);
-                return;
-            case 'get/cards/info':
-                sendCardsInfo(request.cardNames, sendResponse);
-                return;
-            case 'inject':
-                return;
-            default:
-                console.error('Unknown action "' + request.action + '" in request.', request);
-                return;
-        }
+
+        // Handle async operations
+        const handleAsync = async () => {
+            await initializeData();
+            
+            switch (request.action) {
+                case 'get/ban/list':
+                    sendBanList(sendResponse);
+                    return;
+                case 'get/ban/card':
+                    sendBanStatus(request.cardName, sendResponse);
+                    return;
+                case 'get/card/info':
+                    sendCardInfo(request.cardName, sendResponse);
+                    return;
+                case 'get/cards/info':
+                    sendCardsInfo(request.cardNames, sendResponse);
+                    return;
+                case 'inject':
+                    return;
+                default:
+                    console.error('Unknown action "' + request.action + '" in request.', request);
+                    return;
+            }
+        };
+
+        handleAsync().catch(console.error);
+        return true; // Indicate we'll send response asynchronously
     },
 );
+
 
 deckBuilder.init();
 

@@ -1,4 +1,4 @@
-import {Layout} from "scryfall-api/dist/declarations/dist/src/types/Layout";
+import {Layout} from 'scryfall-api';
 
 export interface SingleBanResponse {
     banStatus: string,
