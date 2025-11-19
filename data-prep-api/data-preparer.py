@@ -13,7 +13,7 @@ import unicodedata
 printingsFileName = 'AllPrintings.json'
 printingsFilePath = '.\\' + printingsFileName
 
-seasonToImport = 18
+seasonToImport = 19
 
 importFolder = f'.\\season-{seasonToImport}\\'
 bansFile = 'bans.json'
@@ -118,7 +118,12 @@ seasons = {
 	18: {
 		"id": 18,
 		"startDate": date(2025, 6, 7),
-		"endDate": date(2025, 8, 15),
+		"endDate": date(2025, 11, 16),
+	},
+	19: {
+		"id": 19,
+		"startDate": date(2025, 11, 17),
+		"endDate": date(2025, 1, 30),
 	},
 }
 
@@ -418,6 +423,8 @@ def createCardSeasonDataImportMigration(allCards):
 	bansByName = prepareBanList(importFolder + bansFile)
 	extendedBansByName = prepareBanList(importFolder + extendedBansFile)
 
+	cardNames = {}
+	oracleIds = {}
 	chunk_size = 1000
 	values_list = []
 
@@ -449,9 +456,24 @@ def createCardSeasonDataImportMigration(allCards):
 				print('Card missing in allCards: ' + cardName, file=sys.stderr)
 				continue
 
+			if cardName not in cardNames:
+				cardNames[cardName] = [budgetPoints]
+			else:
+				cardNames[cardName].append(budgetPoints)
+				print('Duplicate budget points found for:', cardNames[cardName], file=sys.stderr)
+				print('Please clean those duplicates in card-prices.json - only the first price will go into the migration.')
+				continue
+
 			cardData = allCards[cardName]
 
 			cardOracleId = cardData['scryfallOracleId']
+			if cardOracleId not in oracleIds:
+				oracleIds[cardOracleId] = [cardName]
+			else:
+				oracleIds[cardOracleId].append(cardName)
+				print('Duplicate oracle id found for:', oracleIds[cardOracleId], file=sys.stderr)
+				continue
+
 			legalities = cardData['legalities']
 			bannedInFormats = bannedFormats(legalities)
 			# Check ban status, handling double-sided cards
@@ -516,13 +538,14 @@ def createCardSeasonDataImportMigration(allCards):
 	return
 
 
-totalSteps = 5
+totalSteps = 6
 step = 0
 digits = len(str(totalSteps))
 print(f'{step:0{digits}d} / {totalSteps:d} | Untap, Upkeep, Draw!')
 step += 1
 
 print(f'{step:0{digits}d} / {totalSteps:d} | (Optional) Download AllPrintings.json from mtgjson.com')
+step += 1
 choice = input("Do you want to download a fresh copy of AllPrintings.json? [y/N]: ").strip().lower() or "N"
 if choice == "y":
 	print('Downloading fresh AllPrintings.json.')
