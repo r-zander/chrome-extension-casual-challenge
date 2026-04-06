@@ -13,7 +13,7 @@ import unicodedata
 printingsFileName = 'AllPrintings.json'
 printingsFilePath = '.\\' + printingsFileName
 
-seasonToImport = 19
+seasonToImport = 20
 
 importFolder = f'.\\season-{seasonToImport}\\'
 bansFile = 'bans.json'
@@ -123,7 +123,12 @@ seasons = {
 	19: {
 		"id": 19,
 		"startDate": date(2025, 11, 17),
-		"endDate": date(2025, 1, 30),
+		"endDate": date(2026, 4, 5),
+	},
+	20: {
+		"id": 20,
+		"startDate": date(2026, 4, 5),
+		"endDate": date(2026, 6, 7),
 	},
 }
 
@@ -196,8 +201,8 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 
 			allCardVersion[cardName][card['uuid']] = {
 				'setCode': card['setCode'],
-				'hasFoil': card['hasFoil'],
-				'hasNonFoil': card['hasNonFoil']
+				'hasFoil': 'foil' in card['finishes'],
+				'hasNonFoil': 'nonfoil' in card['finishes']
 			}
 	# if (len(allCardVersion) >= 5000):
 	# 	break

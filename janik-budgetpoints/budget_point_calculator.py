@@ -17,8 +17,8 @@ pricesFilePath = '.\\' + pricesFileName
 ignoredPricesFilePath = '.\\IgnoredPrices.json'
 outputPath = '..\\data\\card-prices.json'
 
-earliestDate = 20250907  # inclusive
-latestDate = 20251117  # exclusive
+earliestDate = 20260125  # inclusive
+latestDate = 20260405  # exclusive
 
 illegalBorderColors = ['silver', 'gold']
 
@@ -240,8 +240,8 @@ def getAllCardVersions(getIllegalPrintings=False, isDebug=False):
 				}
 			allCardVersion[cardName][card['uuid']] = {
 				'setCode': card['setCode'],
-				'hasFoil': card['hasFoil'],
-				'hasNonFoil': card['hasNonFoil']
+				'hasFoil': 'foil' in card['finishes'],
+				'hasNonFoil': 'nonfoil' in card['finishes']
 			}
 	# if (len(allCardVersion) >= 5000):
 	# 	break
