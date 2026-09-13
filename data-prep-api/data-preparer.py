@@ -13,7 +13,7 @@ import unicodedata
 printingsFileName = 'AllPrintings.json'
 printingsFilePath = '.\\' + printingsFileName
 
-seasonToImport = 20
+seasonToImport = 21
 
 importFolder = f'.\\season-{seasonToImport}\\'
 bansFile = 'bans.json'
@@ -128,7 +128,12 @@ seasons = {
 	20: {
 		"id": 20,
 		"startDate": date(2026, 4, 5),
-		"endDate": date(2026, 6, 7),
+		"endDate": date(2026, 9, 13),
+	},
+	21: {
+		"id": 21,
+		"startDate": date(2026, 9, 13),
+		"endDate": date(2026, 11, 21),
 	},
 }
 
